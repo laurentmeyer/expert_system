@@ -1,4 +1,4 @@
-A => B
-B => C
-=B
-?AC
+A + B + C => D
+D + E => F
+=ABCE
+?F
