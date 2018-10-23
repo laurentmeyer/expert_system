@@ -32,7 +32,7 @@ let string_of_token t =
   | Whitespace -> "{ WHITESPACE }"
   | Implication -> "{ IMPLICATION }"
   | Operand o -> "{ OPERAND: " ^ string_of_operand o ^ " }"
-  | Fact f -> "{ FACT: " ^ Graph.string_of_fact f ^ " }"
+  | Fact f -> "{ FACT: " ^ Graph.string_of_fact (Fact f) ^ " }"
   | Comment -> "{ COMMENT }"
   | Command c -> "{ COMMAND: " ^ string_of_command c ^ " }"
 
@@ -43,15 +43,6 @@ let rec string_of_lexed p =
   | token :: [] -> string_of_token token
   | token :: tail -> string_of_token token ^ "\n" ^ string_of_lexed tail
 
-let string_of_token t =
-  match t with
-  | Operand _ -> "[|\\+]"
-  | Implication -> "=>"
-  | Fact _ -> "[A-Z]"
-  | Command _ -> "[\\?=]"
-  | Comment -> "#.*"
-  | Whitespace -> "[ \\t]"
-
 
 
 
@@ -60,6 +51,15 @@ let string_of_token t =
 
 
 (*  **************  LEXING  *************** *)
+
+let string_of_token t =
+  match t with
+  | Operand _ -> "[|\\+]"
+  | Implication -> "=>"
+  | Fact _ -> "[A-Z]"
+  | Command _ -> "[\\?=]"
+  | Comment -> "#.*"
+  | Whitespace -> "[ \\t]"
 
 let regexp_of_token t = Str.regexp ("^" ^ string_of_token t)
 
@@ -77,23 +77,23 @@ let token_of_string str =
 let cascade_lexing res token =
   match res with
   | Ok l -> Ok l
-  | Error (str, lex) -> begin
+  | Error (str, token_list) -> begin
       let regexp = regexp_of_token token in
       let did_match = Str.string_match regexp str 0 in
-      if not did_match then Error (str, lex)
+      if not did_match then Error (str, token_list)
       else
         let matched_str = Str.matched_string str in
-        let new_lex = lex @ [token_of_string matched_str] in
+        let new_token_list = token_list @ [token_of_string matched_str] in
         let new_str = Str.string_after str (String.length matched_str) in
-        Ok (new_str, new_lex)
+        Ok (new_str, new_token_list)
     end
 
 let all_tokens = [Operand And ; Operand Or ; Implication ; Fact ' ' ; Comment ; Whitespace ; Command Truth ; Command Query]
 
 let lex_line line =
   let rec aux lexing =
-    let (str, lex) = lexing in
-    if str = "" then lex
+    let (str, token_list) = lexing in
+    if str = "" then token_list
     else
       match List.fold_left cascade_lexing (Error lexing) all_tokens with
       | Ok l -> aux l
@@ -116,6 +116,8 @@ let lex_line line =
 
 
 (*  **************  PARSING  *************** *)
+
+
 
 
 let parse_file filename : System.system =

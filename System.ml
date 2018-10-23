@@ -1,15 +1,15 @@
 type system =
   {
     rules : Graph.graph ;
-    truths : Graph.truth ;
-    queries : Graph.truth ;
+    truths : Graph.fact list ;
+    queries : Graph.fact list ;
   }
 
 let dummy_system =
   {
     rules = Graph.dummy_graph ; 
-    truths = Graph.Single 'A' ;
-    queries = Graph.Single 'B' ;
+    truths = Graph.dummy_truth ;
+    queries = Graph.dummy_query ;
   }
 
 let string_of_system (s : system) =
