@@ -1,8 +1,8 @@
 type system =
   {
     rules : Graph.graph ;
-    truths : Graph.fact list ;
-    queries : Graph.fact list ;
+    truths : Graph.Ands.t ;
+    queries : Graph.Facts.t list ;
   }
 
 let dummy_system =
@@ -12,5 +12,14 @@ let dummy_system =
     queries = Graph.dummy_query ;
   }
 
+let rec string_of_queries queries =
+  match queries with
+  | [] -> ""
+  | fact :: [] -> Graph.string_of_fact fact
+  | fact :: tl -> Graph.string_of_fact fact ^ ", " ^ string_of_queries tl
+
+
 let string_of_system (s : system) =
-  "======EXPERT SYSTEM=====\nrules:\n" ^ Graph.string_of_graph s.rules ^ "\n\ntruths: \n\nqueries: "
+  "\n\n\n======EXPERT SYSTEM=====\n\ngraph:\n" ^ Graph.string_of_graph s.rules
+  ^ "\ntruths: " ^ Graph.string_of_and s.truths
+  ^ "\n\nqueries: " ^ string_of_queries s.queries

@@ -1,43 +1,85 @@
-type fact = Fact of char | NotFact of char
-type vertex = fact list
-type edge = vertex list
-type adjacency = vertex * edge list
+module Facts =
+struct
+  type t = Fact of char | NotFact of char
+  let compare t1 t2 =
+    match (t1, t2) with
+    | (Fact f1, Fact f2) -> Pervasives.compare f1 f2
+    | (NotFact f1, NotFact f2) -> Pervasives.compare f1 f2
+    | (Fact f1, NotFact f2) -> 1
+    | (NotFact f1, Fact f2) -> -1
+end
+module Ands = Set.Make(Facts) (* était vertex*)
+module Ors = Set.Make(Ands) (* était edge*)
+type adjacency = Ors.t * Ors.t list
 type graph = adjacency list
 
-let dummy_truth = [Fact 'C']
-let dummy_query = [Fact 'A']
-let dummy_graph : graph =
-  let dummy_fact : fact = Fact 'D' in
-  let dummy_vertex : vertex = [dummy_fact] in
-  let dummy_edge : edge = [[Fact 'A'] ; [Fact 'B' ; Fact 'C']] in
-  let dummy_adjacency : adjacency = (dummy_vertex, [dummy_edge]) in
-  [dummy_adjacency]
+let dummy_graph =
+  [
+    (
+      Ors.(empty
+           |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'C'))
+           |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'D'))
+           |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'C'))
+           |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'D')))
+      ,
+      [
+      ]
+    )
+    ;
+    (
+      Ors.(empty
+            |> add (Ands.singleton (Facts.Fact 'E'))
+            |> add (Ands.singleton (Facts.Fact 'F')))
+      ,
+      [
+        Ors.(empty
+             |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'C'))
+             |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'D'))
+             |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'C'))
+             |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'D')))
+      ]
+    )
+    ;
+    (
+      Ors.singleton (Ands.(empty |> add (Facts.Fact 'G') |> add (Facts.Fact 'H')))
+      ,
+      [
+        Ors.(empty |> add (Ands.singleton (Facts.Fact 'E')) |> add (Ands.singleton (Facts.Fact 'F')))
+      ]
+    )
+  ]
 
-
+let dummy_truth = Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'D') |> add (Facts.Fact 'J'))
+let dummy_query = [Facts.Fact 'G']
 
 (*  **************  SERIALIZATION  *************** *)
 
 let string_of_fact f =
   match f with
-  | Fact f -> String.make 1 f
-  | NotFact f -> "!" ^ String.make 1 f
+  | Facts.Fact f -> String.make 1 f
+  | Facts.NotFact f -> "!" ^ String.make 1 f
 
-let rec string_of_vertex (vertex : vertex) =
-  match vertex with
-  | [] -> ""
-  | fact :: [] -> string_of_fact fact
-  | fact :: tl -> string_of_fact fact ^ " | " ^ string_of_vertex tl
+let string_of_and a =
+  let rec aux lst =
+    match lst with
+    | [] -> ""
+    | fact :: [] -> string_of_fact fact
+    | fact :: tl -> string_of_fact fact ^ "+" ^ aux tl
+  in aux (Ands.elements a)
 
-let rec string_of_edge (edge : edge) =
-  match edge with
-  | [] -> ""
-  | vertex :: [] -> "(" ^ string_of_vertex vertex ^ ")"
-  | vertex :: tl -> "(" ^ string_of_vertex vertex ^ ")" ^ " + " ^ string_of_edge tl
+let string_of_or o =
+  let rec aux lst =
+    match lst with
+    | [] -> ""
+    | a :: [] -> string_of_and a
+    | a :: tl -> string_of_and a ^ " | " ^ aux tl
+  in aux (Ors.elements o)
 
-let string_of_adjacency ((vertex, edges) : adjacency) =
-  let string_of_pair e = string_of_edge e ^ " => " ^ string_of_vertex vertex ^ "\n" in
-  let to_fold = List.map string_of_pair edges in
-  List.fold_left (^) "" to_fold 
+let string_of_adjacency ((conclusion, conditions) : adjacency) =
+  let rec string_of_conditions lst = match lst with
+    | [] -> "$\n"
+    | a :: tl -> string_of_or a ^ " --> " ^ string_of_conditions tl in
+  string_of_or conclusion ^ " --> " ^ string_of_conditions conditions
 
 let string_of_graph (g : graph) =
   let lst = List.map string_of_adjacency g in
@@ -62,7 +104,7 @@ let string_of_graph (g : graph) =
 
    and update_truth graph vertex edge =
     match vertex with
-    | Fact _ -> (vertex, []) :: graph
+    | Facts.Fact _ -> (vertex, []) :: graph
     | Or lst ->
       begin
         let fact_list : edge list = lst in

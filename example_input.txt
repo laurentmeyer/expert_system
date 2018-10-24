@@ -1,4 +1,4 @@
-A + B + C => D
-D + E => F
-=ABCE
-?F
+(A | B) + (C| D)=> E|F
+E | F=> G+H
+=ADJ
+?G #True
