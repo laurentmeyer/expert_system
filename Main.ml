@@ -1,8 +1,8 @@
 let () =
   try
   let filename = Sys.argv.(1) in
-  (* let system = Parser.parse_file filename in *)
-  let system = System.dummy_system in
+  let system = Parser.parse_file filename in
+  (* let system = System.dummy_system in *)
   print_endline (System.string_of_system system)
   with
   | Failure err -> raise (Failure err)

@@ -2,6 +2,8 @@ type operand = And | Or
 type command = Truth | Query
 
 type token =
+  | LeftBracket
+  | RightBracket
   | Operand of operand
   | Implication
   | Fact of char
@@ -29,6 +31,8 @@ let string_of_operand o =
 
 let string_of_token t =
   match t with
+  | LeftBracket -> "{ LEFT BRACKET }"
+  | RightBracket -> "{ RIGHT BRACKET }"
   | Whitespace -> "{ WHITESPACE }"
   | Implication -> "{ IMPLICATION }"
   | Operand o -> "{ OPERAND: " ^ string_of_operand o ^ " }"
@@ -54,6 +58,8 @@ let rec string_of_lexed p =
 
 let string_of_token t =
   match t with
+  | LeftBracket -> "("
+  | RightBracket -> ")"
   | Operand _ -> "[|\\+]"
   | Implication -> "=>"
   | Fact _ -> "[A-Z]"
@@ -64,14 +70,16 @@ let string_of_token t =
 let regexp_of_token t = Str.regexp ("^" ^ string_of_token t)
 
 let token_of_string str =
-  if str = "+" then Operand And
+  if str = "(" then LeftBracket
+  else if str = ")" then RightBracket
+  else if str = "+" then Operand And
   else if str = "|" then Operand Or
   else if str = "=>" then Implication
   else if str = "=" then Command Truth
   else if str = "?" then Command Query
   else if Str.string_match (Str.regexp "^[ \\t]") str 0 then Whitespace
   else if Str.string_match (Str.regexp "^[##.*]") str 0 then Comment
-  else if Str.string_match (Str.regexp "^[A-Z]$") str 0 then  Fact (String.get str 0)
+  else if Str.string_match (Str.regexp "^[A-Z]$") str 0 then Fact (String.get str 0)
   else raise (Parsing_exception str)
 
 let cascade_lexing res token =
@@ -88,7 +96,7 @@ let cascade_lexing res token =
         Ok (new_str, new_token_list)
     end
 
-let all_tokens = [Operand And ; Operand Or ; Implication ; Fact ' ' ; Comment ; Whitespace ; Command Truth ; Command Query]
+let all_tokens = [LeftBracket ; RightBracket ; Operand And ; Operand Or ; Implication ; Fact ' ' ; Comment ; Whitespace ; Command Truth ; Command Query]
 
 let lex_line line =
   let rec aux lexing =
