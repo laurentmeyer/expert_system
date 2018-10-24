@@ -1,21 +1,19 @@
-type operand = And | Or
+type operand = And | Or | Xor
 type command = Truth | Query
 
 type token =
   | LeftBracket
   | RightBracket
+  | Not
   | Operand of operand
   | Implication
+  | DoubleImplication
   | Fact of char
   | Command of command
   | Comment
   | Whitespace
 
 exception Parsing_exception of string
-
-
-
-
 
 (*  **************  SERIALIZATION  *************** *)
 
@@ -28,13 +26,16 @@ let string_of_operand o =
   match o with
   | And -> "&"
   | Or -> "|"
+  | Xor -> "^"
 
 let string_of_token t =
   match t with
   | LeftBracket -> "{ LEFT BRACKET }"
   | RightBracket -> "{ RIGHT BRACKET }"
+  | Not -> "{ NOT }"
   | Whitespace -> "{ WHITESPACE }"
   | Implication -> "{ IMPLICATION }"
+  | DoubleImplication -> "{ DOUBLE IMPLICATION }"
   | Operand o -> "{ OPERAND: " ^ string_of_operand o ^ " }"
   | Fact f -> "{ FACT: " ^ Graph.string_of_fact (Fact f) ^ " }"
   | Comment -> "{ COMMENT }"
@@ -47,21 +48,16 @@ let rec string_of_lexed p =
   | token :: [] -> string_of_token token
   | token :: tail -> string_of_token token ^ "\n" ^ string_of_lexed tail
 
-
-
-
-
-
-
-
 (*  **************  LEXING  *************** *)
 
 let string_of_token t =
   match t with
   | LeftBracket -> "("
   | RightBracket -> ")"
-  | Operand _ -> "[|\\+]"
+  | Not -> "!"
+  | Operand _ -> "[|\\+\\^]"
   | Implication -> "=>"
+  | DoubleImplication -> "<=>"
   | Fact _ -> "[A-Z]"
   | Command _ -> "[\\?=]"
   | Comment -> "#.*"
@@ -72,9 +68,12 @@ let regexp_of_token t = Str.regexp ("^" ^ string_of_token t)
 let token_of_string str =
   if str = "(" then LeftBracket
   else if str = ")" then RightBracket
+  else if str = "!" then Not
   else if str = "+" then Operand And
   else if str = "|" then Operand Or
+  else if str = "^" then Operand Xor
   else if str = "=>" then Implication
+  else if str = "<=>" then DoubleImplication
   else if str = "=" then Command Truth
   else if str = "?" then Command Query
   else if Str.string_match (Str.regexp "^[ \\t]") str 0 then Whitespace
@@ -96,7 +95,7 @@ let cascade_lexing res token =
         Ok (new_str, new_token_list)
     end
 
-let all_tokens = [LeftBracket ; RightBracket ; Operand And ; Operand Or ; Implication ; Fact ' ' ; Comment ; Whitespace ; Command Truth ; Command Query]
+let all_tokens = [LeftBracket ; RightBracket; Not ; Operand And ; Operand Or ; Operand Xor ; Implication ; DoubleImplication ; Fact ' ' ; Comment ; Whitespace ; Command Truth ; Command Query]
 
 let lex_line line =
   let rec aux lexing =
@@ -115,18 +114,7 @@ let lex_line line =
     | _ -> true in
   List.filter filter_token unfiltered_token
 
-
-
-
-
-
-
-
-
 (*  **************  PARSING  *************** *)
-
-
-
 
 let parse_file filename : System.system =
     let ic = open_in filename in

@@ -1,4 +1,5 @@
-(A | B) + (C| D)=> E|F
+!(A | B) + (C| D) ^ Z <=> E|F
 E | F=> G+H
+Z <=> Z
 =ADJ
 ?G #True
