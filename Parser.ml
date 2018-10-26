@@ -115,11 +115,28 @@ let lex_line line =
   List.filter filter_token unfiltered_token
 
 (*  **************  PARSING  *************** *)
+(* | LeftBracket       -> LeftBracket, Not, Fact
+| RightBracket      -> Operand, Implication, DoubleImplication
+| Not               -> LeftBracket, Fact
+| Operand           -> No, Fact, LeftBracket 
+| Implication       -> LeftBracket, Not, Fact
+| DoubleImplication -> LeftBracket, Not, Fact
+| Fact              -> Operand, RightBracket, Implication, DoubleImplication
+
+| Command
+| Comment
+| Whitespace *)
+
+
+
+let parse_line (line : token list) : bool =
+  true
 
 let parse_file filename : System.system =
     let ic = open_in filename in
     let line = input_line ic in
-    let p = lex_line line in
-    print_endline (string_of_lexed p) ;
-    close_in ic ;
+    let tokens = lex_line line in
+    print_endline (string_of_lexed tokens);
+    print_endline (string_of_bool (parse_line tokens));
+    close_in ic;
     System.dummy_system

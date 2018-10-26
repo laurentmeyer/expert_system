@@ -1,3 +1,8 @@
 COMPLIQUÉ
 - gestion des AND
 - gestion des parenthèses
+
+- parentheses
+    - cas des parentheses séparées des "|" pas utiles
+    - 
+- construction du graphe

@@ -8,49 +8,12 @@ struct
     | (Fact f1, NotFact f2) -> 1
     | (NotFact f1, Fact f2) -> -1
 end
+
 module Ands = Set.Make(Facts) (* était vertex*)
 module Ors = Set.Make(Ands) (* était edge*)
+
 type adjacency = Ors.t * Ors.t list
 type graph = adjacency list
-
-let dummy_graph =
-  [
-    (
-      Ors.(empty
-           |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'C'))
-           |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'D'))
-           |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'C'))
-           |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'D')))
-      ,
-      [
-      ]
-    )
-    ;
-    (
-      Ors.(empty
-            |> add (Ands.singleton (Facts.Fact 'E'))
-            |> add (Ands.singleton (Facts.Fact 'F')))
-      ,
-      [
-        Ors.(empty
-             |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'C'))
-             |> add Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'D'))
-             |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'C'))
-             |> add Ands.(empty |> add (Facts.Fact 'B') |> add (Facts.Fact 'D')))
-      ]
-    )
-    ;
-    (
-      Ors.singleton (Ands.(empty |> add (Facts.Fact 'G') |> add (Facts.Fact 'H')))
-      ,
-      [
-        Ors.(empty |> add (Ands.singleton (Facts.Fact 'E')) |> add (Ands.singleton (Facts.Fact 'F')))
-      ]
-    )
-  ]
-
-let dummy_truth = Ands.(empty |> add (Facts.Fact 'A') |> add (Facts.Fact 'D') |> add (Facts.Fact 'J'))
-let dummy_query = [Facts.Fact 'G']
 
 (*  **************  SERIALIZATION  *************** *)
 

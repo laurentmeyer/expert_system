@@ -5,12 +5,55 @@ type system =
     queries : Graph.Facts.t list ;
   }
 
+(* DUMMY SYSTEM *)
+
+let dummy_graph =
+  [
+    (
+      Graph.Ors.(empty
+            |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'A') |> add (Graph.Facts.Fact 'C'))
+            |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'A') |> add (Graph.Facts.Fact 'D'))
+            |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'B') |> add (Graph.Facts.Fact 'C'))
+            |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'B') |> add (Graph.Facts.Fact 'D')))
+      ,
+      [
+      ]
+    )
+    ;
+    (
+      Graph.Ors.(empty
+            |> add (Graph.Ands.singleton (Graph.Facts.Fact 'E'))
+            |> add (Graph.Ands.singleton (Graph.Facts.Fact 'F')))
+      ,
+      [
+        Graph.Ors.(empty
+              |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'A') |> add (Graph.Facts.Fact 'C'))
+              |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'A') |> add (Graph.Facts.Fact 'D'))
+              |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'B') |> add (Graph.Facts.Fact 'C'))
+              |> add Graph.Ands.(empty |> add (Graph.Facts.Fact 'B') |> add (Graph.Facts.Fact 'D')))
+      ]
+    )
+    ;
+    (
+      Graph.Ors.singleton (Graph.Ands.(empty |> add (Graph.Facts.Fact 'G') |> add (Graph.Facts.Fact 'H')))
+      ,
+      [
+        Graph.Ors.(empty |> add (Graph.Ands.singleton (Graph.Facts.Fact 'E')) |> add (Graph.Ands.singleton (Graph.Facts.Fact 'F')))
+      ]
+    )
+  ]
+
+let dummy_truth = Graph.Ands.(empty |> add (Graph.Facts.Fact 'A') |> add (Graph.Facts.Fact 'D') |> add (Graph.Facts.Fact 'J'))
+let dummy_query = [Graph.Facts.Fact 'G']  
+
 let dummy_system =
   {
-    rules = Graph.dummy_graph ; 
-    truths = Graph.dummy_truth ;
-    queries = Graph.dummy_query ;
+    rules = dummy_graph ; 
+    truths = dummy_truth ;
+    queries = dummy_query ;
   }
+
+(* END OF DUMMY SYSTEM *)
 
 let rec string_of_queries queries =
   match queries with
