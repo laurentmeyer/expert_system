@@ -5,6 +5,13 @@ type system =
     queries : Graph.Facts.t list ;
   }
 
+  let empty =
+  {
+    rules = [] ;
+    truths = Graph.Ands.empty ;
+    queries = [] ;
+  }
+
 (* DUMMY SYSTEM *)
 
 let dummy_graph =

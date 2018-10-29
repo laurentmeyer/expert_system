@@ -129,14 +129,21 @@ let lex_line line =
 
 
 
-let parse_line (line : token list) : bool =
-  true
+let parse_rule (tokens : token list) system : System.system =
+
+  system
+
+let parse_tokens (tokens : token list) system : System.system =
+  match tokens with
+  | Command c :: _ -> system
+  | _ -> parse_rule tokens system
 
 let parse_file filename : System.system =
     let ic = open_in filename in
     let line = input_line ic in
     let tokens = lex_line line in
+    let system = System.empty in
     print_endline (string_of_lexed tokens);
-    print_endline (string_of_bool (parse_line tokens));
+    print_endline (System.string_of_system (parse_tokens tokens system));
     close_in ic;
-    System.dummy_system
+    system
