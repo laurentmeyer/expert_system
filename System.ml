@@ -14,7 +14,7 @@ type system =
 
 (* DUMMY SYSTEM *)
 
-let dummy_graph =
+(* let dummy_graph =
   [
     (
       Graph.Ors.(empty
@@ -58,7 +58,7 @@ let dummy_system =
     rules = dummy_graph ; 
     truths = dummy_truth ;
     queries = dummy_query ;
-  }
+  } *)
 
 (* END OF DUMMY SYSTEM *)
 

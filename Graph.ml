@@ -11,8 +11,8 @@ end
 
 module Ands = Set.Make(Facts) (* était vertex*)
 module Ors = Set.Make(Ands) (* était edge*)
-
-type adjacency = Ors.t * Ors.t list
+module Conditions = Set.Make(Ors)
+type adjacency = Ors.t * Conditions.t
 type graph = adjacency list
 
 (*  **************  SERIALIZATION  *************** *)
@@ -42,7 +42,7 @@ let string_of_adjacency ((conclusion, conditions) : adjacency) =
   let rec string_of_conditions lst = match lst with
     | [] -> "$\n"
     | a :: tl -> string_of_or a ^ " --> " ^ string_of_conditions tl in
-  string_of_or conclusion ^ " --> " ^ string_of_conditions conditions
+  string_of_or conclusion ^ " --> " ^ string_of_conditions (Conditions.elements conditions)
 
 let string_of_graph (g : graph) =
   let lst = List.map string_of_adjacency g in
@@ -50,6 +50,20 @@ let string_of_graph (g : graph) =
 
 
 (*  **************  UPDATES  *************** *)
+
+let ors_of_char c : Ors.t =
+  Ors.singleton (Ands.singleton (Fact c))
+
+let union_ors a b : Ors.t =
+  Ors.union a b 
+
+let add_adjacency graph condition conclusion : graph =
+  let is_conclusion (conc, _) = (conc = conclusion) in
+  let (satisfies, not_satisfies) = List.partition is_conclusion graph in
+  let new_adjacerncy = match satisfies with
+  | [] -> (conclusion, Conditions.singleton condition)
+  | (_, old_conditions) :: tl -> (conclusion, (Conditions.union old_conditions (Conditions.singleton condition)))
+  in new_adjacerncy :: not_satisfies
 
 
 (* let create_edge graph vertex edge =

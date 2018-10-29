@@ -8,7 +8,7 @@ type token =
   | Operand of operand
   | Implication
   | DoubleImplication
-  | Fact of char
+  | Fact of Graph.Ors.t
   | Command of command
   | Comment
   | Whitespace
@@ -37,7 +37,7 @@ let string_of_token t =
   | Implication -> "{ IMPLICATION }"
   | DoubleImplication -> "{ DOUBLE IMPLICATION }"
   | Operand o -> "{ OPERAND: " ^ string_of_operand o ^ " }"
-  | Fact f -> "{ FACT: " ^ Graph.string_of_fact (Fact f) ^ " }"
+  | Fact f -> "{ FACT: " ^ Graph.string_of_or f ^ " }"
   | Comment -> "{ COMMENT }"
   | Command c -> "{ COMMAND: " ^ string_of_command c ^ " }"
 
@@ -78,7 +78,7 @@ let token_of_string str =
   else if str = "?" then Command Query
   else if Str.string_match (Str.regexp "^[ \\t]") str 0 then Whitespace
   else if Str.string_match (Str.regexp "^[##.*]") str 0 then Comment
-  else if Str.string_match (Str.regexp "^[A-Z]$") str 0 then Fact (String.get str 0)
+  else if Str.string_match (Str.regexp "^[A-Z]$") str 0 then Fact (Graph.ors_of_char (String.get str 0))
   else raise (Parsing_exception str)
 
 let cascade_lexing res token =
@@ -95,7 +95,7 @@ let cascade_lexing res token =
         Ok (new_str, new_token_list)
     end
 
-let all_tokens = [LeftBracket ; RightBracket; Not ; Operand And ; Operand Or ; Operand Xor ; Implication ; DoubleImplication ; Fact ' ' ; Comment ; Whitespace ; Command Truth ; Command Query]
+let all_tokens = [LeftBracket ; RightBracket; Not ; Operand And ; Operand Or ; Operand Xor ; Implication ; DoubleImplication ; Fact Graph.Ors.empty ; Comment ; Whitespace ; Command Truth ; Command Query]
 
 let lex_line line =
   let rec aux lexing =
@@ -128,22 +128,45 @@ let lex_line line =
 | Whitespace *)
 
 
+let rec parse_expression tokens =
+  match tokens with
+  | Fact f :: [] -> f
+  | Fact a :: Operand Or :: Fact b :: tail -> parse_expression (Fact (Graph.union_ors a b) :: tail)
+  | _ -> raise (Parsing_exception "cas a gerer")
 
-let parse_rule (tokens : token list) system : System.system =
 
-  system
+let split_rule tokens =
+  let rec aux acc rhs =
+    match rhs with
+    | Implication :: tail -> (acc, tail)
+    | DoubleImplication :: tail -> (acc, tail)
+    | hd :: tail -> aux (acc @ [hd]) tail
+    | _ -> raise (Parsing_exception "Parser: no `=>' or `<=>' in the rule.") in
+  aux [] tokens
+
+let parse_rule (tokens : token list) (system : System.system) : System.system =
+  let (left_side, right_side) = split_rule tokens in
+  (* print_endline (string_of_lexed left_side) ;
+  print_endline (string_of_lexed right_side) ; *)
+  let new_left = parse_expression left_side in
+  let new_right = parse_expression right_side in
+  let new_graph = Graph.add_adjacency system.rules new_left new_right in
+  (* print_endline (string_of_lexed new_left) ;
+  print_endline (string_of_lexed new_right) ; *)
+  {system with rules = new_graph }
 
 let parse_tokens (tokens : token list) system : System.system =
   match tokens with
+  | [] -> system
   | Command c :: _ -> system
   | _ -> parse_rule tokens system
 
 let parse_file filename : System.system =
-    let ic = open_in filename in
-    let line = input_line ic in
-    let tokens = lex_line line in
-    let system = System.empty in
-    print_endline (string_of_lexed tokens);
-    print_endline (System.string_of_system (parse_tokens tokens system));
-    close_in ic;
-    system
+  let ic = open_in filename in
+  let line = input_line ic in
+  let tokens = lex_line line in
+  let system = System.empty in
+  let new_system = parse_tokens tokens system in
+  print_endline (System.string_of_system new_system);
+  close_in ic;
+  new_system
