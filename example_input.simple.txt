@@ -1,3 +1,6 @@
 A | C => B
+A | D => B
+A | D | C => B
+D | E => F
 =A
 ?B

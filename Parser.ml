@@ -146,13 +146,9 @@ let split_rule tokens =
 
 let parse_rule (tokens : token list) (system : System.system) : System.system =
   let (left_side, right_side) = split_rule tokens in
-  (* print_endline (string_of_lexed left_side) ;
-  print_endline (string_of_lexed right_side) ; *)
   let new_left = parse_expression left_side in
   let new_right = parse_expression right_side in
   let new_graph = Graph.add_adjacency system.rules new_left new_right in
-  (* print_endline (string_of_lexed new_left) ;
-  print_endline (string_of_lexed new_right) ; *)
   {system with rules = new_graph }
 
 let parse_tokens (tokens : token list) system : System.system =
@@ -163,10 +159,15 @@ let parse_tokens (tokens : token list) system : System.system =
 
 let parse_file filename : System.system =
   let ic = open_in filename in
-  let line = input_line ic in
-  let tokens = lex_line line in
-  let system = System.empty in
-  let new_system = parse_tokens tokens system in
-  print_endline (System.string_of_system new_system);
-  close_in ic;
-  new_system
+  let rec read_input acc = 
+    try
+    begin
+      let line = input_line ic in
+      let tokens = lex_line line in
+      let new_system = parse_tokens tokens acc in
+      print_endline (System.string_of_system new_system);
+      read_input new_system
+    end
+    with
+    | End_of_file -> close_in ic ; acc
+    in read_input System.empty

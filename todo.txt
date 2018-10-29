@@ -6,3 +6,5 @@ COMPLIQUÉ
     - cas des parentheses séparées des "|" pas utiles
     - 
 - construction du graphe
+
+- challenger le fait qu'on ajoute les conditions aussi simplement dans les adjacences
