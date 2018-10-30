@@ -86,41 +86,13 @@ let add_adjacency graph condition conclusion : graph =
   in new_adjacerncy :: not_satisfies
 
 
-(* let create_edge graph vertex edge =
 
+(*  **************  SEARCH  *************** *)
 
+let vertices (graph : graph) : Ors.t list =
+  List.map (fun (a, _) -> a) graph
 
-   let rec update_graph graph vertex edge : graph =
-    let (t, tail) = List.partition (fun (a, b) -> a = truth) graph in
-    let new_truth = match t with
-      | [] -> (vertex, [edge]) :: graph
-      | (_, i) :: _ -> (vertex, edge :: i) :: graph
-    in new_truth :: tail
-
-   and create_
-
-   and update_truth graph vertex edge =
-    match vertex with
-    | Facts.Fact _ -> (vertex, []) :: graph
-    | Or lst ->
-      begin
-        let fact_list : edge list = lst in
-        (vertex, lst) :: graph
-      end
-
-   (* and create_or graph vertex (lst : fact list) : graph =
-   let implication_list = List.map (fun f -> Fa)
-   List.fold_left create_truth_if_necessary  *)
-
-
-
-
-   let add_implication (graph : graph) vertex edge : graph =
-   let graph = add_truth_if_necessary graph vertex in
-
-   let filter_fun = fun (a, b) -> a = vertex in
-   let (is_truth, other) = List.partition filter_fun graph in
-   if is_truth = [] then graph @ [(vertex, [edge])]
-   else
-    let (_, i) = List.hd is_truth in
-    other @ [(vertex, i @ [edge])] *)
+let neighbors (graph : graph) vertex : Ors.t list =
+  match List.find_opt (fun (a, _) -> a = vertex) graph with
+  | Some (_, conditions) -> Conditions.elements conditions
+  | None -> []

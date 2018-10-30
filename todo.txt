@@ -1,3 +1,6 @@
-COMPLIQUÉ
+- étendre l'algo à tous les vertex qui prouvent la query
+- ajouter la détection d'undefined
+- quel comportement si "!A => B ; =C ; ?B" ?
 - challenger le fait qu'on ajoute les conditions aussi simplement dans les adjacences
-- 
+- detection de contradictions
+- detection de verités "induites"

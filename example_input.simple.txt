@@ -1,15 +1,4 @@
-A | B + C ^ D | E | F => X
-#!(A | B + C) => E
-#!(A | C) => B
-#(A | B + C) => E
-#(A + B | C) + (D | E + F | G) => X
-#(A | B) + (C | D | E) => X
-# (A | R) | E => X
-# (A | B) | (C | D) => E
-#(A) => X
-#A | C => B
-#A | D => B
-#A | D | C => B
-#D | E => F
-=ABE
-?BTY
+A => B | C
+B | C => D
+=A
+?D

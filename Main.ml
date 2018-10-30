@@ -3,7 +3,8 @@ let () =
   let filename = Sys.argv.(1) in
   let system = Parser.parse_file filename in
   (* let system = System.dummy_system in *)
-  print_endline (System.string_of_system system)
+  print_endline (System.string_of_system system) ;
+  Search.search_all system
   with
   | Failure err -> raise (Failure err)
   | Parser.Parsing_exception str -> Printf.printf "Invalid instruction near: {%s}\n" str
