@@ -48,6 +48,9 @@ let rec string_of_lexed p =
   | token :: [] -> string_of_token token
   | token :: tail -> string_of_token token ^ "\n" ^ string_of_lexed tail
 
+
+
+
 (*  **************  LEXING  *************** *)
 
 let string_of_token t =
@@ -114,31 +117,38 @@ let lex_line line =
     | _ -> true in
   List.filter filter_token unfiltered_token
 
+
+
+
 (*  **************  PARSING  *************** *)
-(* | LeftBracket       -> LeftBracket, Not, Fact
-   | RightBracket      -> Operand, Implication, DoubleImplication
-   | Not               -> LeftBracket, Fact
-   | Operand           -> No, Fact, LeftBracket 
-   | Implication       -> LeftBracket, Not, Fact
-   | DoubleImplication -> LeftBracket, Not, Fact
-   | Fact              -> Operand, RightBracket, Implication, DoubleImplication
-
-   | Command
-   | Comment
-   | Whitespace *)
-
 
 let rec parse_expression tokens =
   print_endline (string_of_lexed tokens ^ "\n") ;
   match tokens with
+  (* fait isolé *)
   | Fact _ :: [] -> tokens
   | Fact _ :: RightBracket :: [] -> tokens
   | Fact _ :: RightBracket :: Operand _ :: tail -> tokens
-  | Fact a :: Operand And :: Fact b :: tail -> parse_expression (Fact (Graph.intersection_ors a b) :: tail)
-  | Fact a :: Operand Or :: Fact b :: tail -> parse_expression (Fact (Graph.union_ors a b) :: tail)
+  (* Parenthèses *)
   | LeftBracket :: Fact a :: RightBracket :: tail -> parse_expression (Fact a :: tail)
   | LeftBracket :: tail -> parse_expression (LeftBracket :: parse_expression tail)
   | Fact a :: Operand o :: LeftBracket :: tail -> parse_expression (Fact a :: Operand o :: parse_expression (LeftBracket :: tail))
+  (* NOT *)
+  | Not :: Fact a :: tail -> parse_expression (Fact (Graph.not_of_ors a) :: tail)
+  | Not :: LeftBracket :: tail -> parse_expression (Not :: parse_expression (LeftBracket :: parse_expression tail))
+  (* AND *)
+  | Fact a :: Operand And :: Fact b :: tail -> parse_expression (Fact (Graph.intersection_ors a b) :: tail)
+  (* OR *)
+  | Fact a :: Operand Or :: Fact b :: Operand Or :: tail -> parse_expression (Fact (Graph.union_ors a b) :: Operand Or :: tail)
+  | Fact a :: Operand Or :: Fact b :: [] -> parse_expression (Fact (Graph.union_ors a b) :: [])
+  | Fact a :: Operand Or :: Fact b :: RightBracket :: tail -> parse_expression (Fact (Graph.union_ors a b) :: RightBracket :: tail)
+  | Fact a :: Operand Or :: Fact b :: Operand And :: tail -> parse_expression (Fact a :: Operand Or :: parse_expression (Fact b :: Operand And :: tail))
+  | Fact a :: Operand Or :: Fact b :: Operand Xor :: tail -> parse_expression (Fact (Graph.union_ors a b) :: Operand Xor :: tail)
+  (* XOR *)
+  | Fact a :: Operand Xor :: Fact b :: [] -> parse_expression (Fact (Graph.xor_ors a b) :: [])
+  | Fact a :: Operand Xor :: Fact b :: Operand Xor :: tail -> parse_expression (Fact (Graph.xor_ors a b) :: Operand Xor :: tail)
+  | Fact a :: Operand Xor :: tail -> Fact a :: Operand Xor :: parse_expression tail
+  (* Exceptions *)
   | _ -> raise (Parsing_exception "cas a gerer")
 
 let parsed_to_ors tokens = 

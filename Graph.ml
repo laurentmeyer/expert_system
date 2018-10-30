@@ -5,8 +5,8 @@ struct
     match (t1, t2) with
     | (Fact f1, Fact f2) -> Pervasives.compare f1 f2
     | (NotFact f1, NotFact f2) -> Pervasives.compare f1 f2
-    | (Fact f1, NotFact f2) -> 1
-    | (NotFact f1, Fact f2) -> -1
+    | (Fact f1, NotFact f2) -> -1
+    | (NotFact f1, Fact f2) -> 1
 end
 
 module Ands = Set.Make(Facts) (* était vertex*)
@@ -63,6 +63,19 @@ let intersection_ors a b : Ors.t =
   let combination_list = List.flatten (List.map combine (Ors.elements b)) in
   Ors.of_list combination_list
 
+let not_of_ors ors =
+  let not_of_fact fact = match fact with
+  | Facts.Fact f -> Facts.NotFact f
+  | Facts.NotFact f -> Facts.Fact f in
+  let facts_of_or_elt e : Facts.t list = Ands.elements e in
+  let not_facts_of_or_elt e = List.map not_of_fact (facts_of_or_elt e) in
+  let ors_of_non_facts e = List.map (fun elt -> Ors.singleton (Ands.singleton elt)) (not_facts_of_or_elt e) in
+  let union_of_non_facts e = List.fold_left (Ors.union) Ors.empty (ors_of_non_facts e) in
+  let list_of_not_unions = List.map union_of_non_facts (Ors.elements ors) in
+  List.fold_left intersection_ors (List.hd list_of_not_unions) list_of_not_unions
+
+let xor_ors a b =
+  union_ors (intersection_ors a (not_of_ors b)) (intersection_ors (not_of_ors a) b)
 
 let add_adjacency graph condition conclusion : graph =
   let is_conclusion (conc, _) = (conc = conclusion) in
