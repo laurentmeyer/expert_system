@@ -116,24 +116,35 @@ let lex_line line =
 
 (*  **************  PARSING  *************** *)
 (* | LeftBracket       -> LeftBracket, Not, Fact
-| RightBracket      -> Operand, Implication, DoubleImplication
-| Not               -> LeftBracket, Fact
-| Operand           -> No, Fact, LeftBracket 
-| Implication       -> LeftBracket, Not, Fact
-| DoubleImplication -> LeftBracket, Not, Fact
-| Fact              -> Operand, RightBracket, Implication, DoubleImplication
+   | RightBracket      -> Operand, Implication, DoubleImplication
+   | Not               -> LeftBracket, Fact
+   | Operand           -> No, Fact, LeftBracket 
+   | Implication       -> LeftBracket, Not, Fact
+   | DoubleImplication -> LeftBracket, Not, Fact
+   | Fact              -> Operand, RightBracket, Implication, DoubleImplication
 
-| Command
-| Comment
-| Whitespace *)
+   | Command
+   | Comment
+   | Whitespace *)
 
 
 let rec parse_expression tokens =
+  print_endline (string_of_lexed tokens ^ "\n") ;
   match tokens with
-  | Fact f :: [] -> f
+  | Fact _ :: [] -> tokens
+  | Fact _ :: RightBracket :: [] -> tokens
+  | Fact _ :: RightBracket :: Operand _ :: tail -> tokens
+  | Fact a :: Operand And :: Fact b :: tail -> parse_expression (Fact (Graph.intersection_ors a b) :: tail)
   | Fact a :: Operand Or :: Fact b :: tail -> parse_expression (Fact (Graph.union_ors a b) :: tail)
+  | LeftBracket :: Fact a :: RightBracket :: tail -> parse_expression (Fact a :: tail)
+  | LeftBracket :: tail -> parse_expression (LeftBracket :: parse_expression tail)
+  | Fact a :: Operand o :: LeftBracket :: tail -> parse_expression (Fact a :: Operand o :: parse_expression (LeftBracket :: tail))
   | _ -> raise (Parsing_exception "cas a gerer")
 
+let parsed_to_ors tokens = 
+  match tokens with
+  | Fact f :: [] -> f
+  | _ -> raise (Parsing_exception ("Non resolved expression" ^ string_of_lexed tokens))
 
 let split_rule tokens =
   let rec aux acc rhs =
@@ -146,10 +157,10 @@ let split_rule tokens =
 
 let parse_rule (tokens : token list) (system : System.system) : System.system =
   let (left_side, right_side) = split_rule tokens in
-  let new_left = parse_expression left_side in
-  let new_right = parse_expression right_side in
+  let new_left = parsed_to_ors (parse_expression left_side) in
+  let new_right = parsed_to_ors (parse_expression right_side) in
   let new_graph = Graph.add_adjacency system.rules new_left new_right in
-  {system with rules = new_graph }
+  { system with rules = new_graph }
 
 let parse_tokens (tokens : token list) system : System.system =
   match tokens with
@@ -161,13 +172,13 @@ let parse_file filename : System.system =
   let ic = open_in filename in
   let rec read_input acc = 
     try
-    begin
-      let line = input_line ic in
-      let tokens = lex_line line in
-      let new_system = parse_tokens tokens acc in
-      print_endline (System.string_of_system new_system);
-      read_input new_system
-    end
+      begin
+        let line = input_line ic in
+        let tokens = lex_line line in
+        let new_system = parse_tokens tokens acc in
+        (* print_endline (System.string_of_system new_system); *)
+        read_input new_system
+      end
     with
     | End_of_file -> close_in ic ; acc
-    in read_input System.empty
+  in read_input System.empty

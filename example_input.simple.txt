@@ -1,6 +1,11 @@
-A | C => B
-A | D => B
-A | D | C => B
-D | E => F
+#(A + B | C) + (D | E + F | G) => X
+(A | B) + (C | D | E) => X
+# (A | R) | E => X
+# (A | B) | (C | D) => E
+#(A) => X
+#A | C => B
+#A | D => B
+#A | D | C => B
+#D | E => F
 =A
 ?B

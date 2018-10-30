@@ -57,6 +57,13 @@ let ors_of_char c : Ors.t =
 let union_ors a b : Ors.t =
   Ors.union a b 
 
+let intersection_ors a b : Ors.t =
+  let a_elts = Ors.elements a in
+  let combine elt = List.map (Ands.union elt) a_elts in
+  let combination_list = List.flatten (List.map combine (Ors.elements b)) in
+  Ors.of_list combination_list
+
+
 let add_adjacency graph condition conclusion : graph =
   let is_conclusion (conc, _) = (conc = conclusion) in
   let (satisfies, not_satisfies) = List.partition is_conclusion graph in
