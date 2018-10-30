@@ -11,5 +11,5 @@ A | B + C ^ D | E | F => X
 #A | D => B
 #A | D | C => B
 #D | E => F
-=A
-?B
+=ABE
+?BTY

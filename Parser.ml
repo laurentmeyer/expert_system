@@ -123,7 +123,7 @@ let lex_line line =
 (*  **************  PARSING  *************** *)
 
 let rec parse_expression tokens =
-  print_endline (string_of_lexed tokens ^ "\n") ;
+  (* print_endline (string_of_lexed tokens ^ "\n") ; *)
   match tokens with
   (* fait isolé *)
   | Fact _ :: [] -> tokens
@@ -172,10 +172,25 @@ let parse_rule (tokens : token list) (system : System.system) : System.system =
   let new_graph = Graph.add_adjacency system.rules new_left new_right in
   { system with rules = new_graph }
 
+let parse_truth tokens (system : System.system) =
+  let rec aux t acc = match t with
+  | [] -> acc
+  | Fact f :: tail -> aux tail (Graph.Ands.add (Graph.Ands.choose (Graph.Ors.choose f)) acc)
+  | _ -> raise (Parsing_exception "Unrecognized token in truths") in
+  { system with truths = aux tokens Graph.Ands.empty }
+
+let parse_query tokens (system : System.system) =
+  let rec aux t acc = match t with
+  | [] -> acc
+  | Fact f :: tail -> aux tail (acc @ [Graph.Ands.choose (Graph.Ors.choose f)])
+  | _ -> raise (Parsing_exception "Unrecognized token in queries") in
+  { system with queries = aux tokens [] }
+  
 let parse_tokens (tokens : token list) system : System.system =
   match tokens with
   | [] -> system
-  | Command c :: _ -> system
+  | Command Truth :: tail -> parse_truth tail system
+  | Command Query :: tail -> parse_query tail system
   | _ -> parse_rule tokens system
 
 let parse_file filename : System.system =
@@ -186,7 +201,6 @@ let parse_file filename : System.system =
         let line = input_line ic in
         let tokens = lex_line line in
         let new_system = parse_tokens tokens acc in
-        (* print_endline (System.string_of_system new_system); *)
         read_input new_system
       end
     with
