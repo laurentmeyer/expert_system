@@ -6,7 +6,6 @@ let ors_is_true truths ors =
   Graph.Ors.exists ands_is_true ors
 
 let search_query graph truths query =
-  let vertices = Graph.vertices graph in (* TODO: étendre à tous les surensembles blabla *)
   let rec bfs queue marked =
     if queue = [] then marked
     else

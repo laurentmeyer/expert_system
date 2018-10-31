@@ -1,0 +1,6 @@
+A + B + C => D
+E => A + B
+F => C
+G => C
+=E  F
+?D

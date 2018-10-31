@@ -1,0 +1,4 @@
+A => B | C
+C => E
+=A
+?E #should be undefined
