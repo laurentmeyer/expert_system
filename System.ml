@@ -73,3 +73,6 @@ let string_of_system (s : system) =
   "\n\n\n======EXPERT SYSTEM=====\n\ngraph:\n" ^ Graph.string_of_graph s.rules
   ^ "\ntruths: " ^ Graph.string_of_and s.truths
   ^ "\n\nqueries: " ^ string_of_queries s.queries
+
+let expand_system (s : system) =
+  {s with rules = Graph.expand_graph (s.rules)}

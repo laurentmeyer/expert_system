@@ -11,8 +11,7 @@ end
 
 module Ands = Set.Make(Facts) (* était vertex*)
 module Ors = Set.Make(Ands) (* était edge*)
-module Conditions = Set.Make(Ors)
-type adjacency = Ors.t * Conditions.t
+type adjacency = Ors.t * Ors.t
 type graph = adjacency list
 
 (*  **************  SERIALIZATION  *************** *)
@@ -38,15 +37,23 @@ let string_of_or o =
     | a :: tl -> string_of_and a ^ " | " ^ aux tl
   in aux (Ors.elements o)
 
-let string_of_adjacency ((conclusion, conditions) : adjacency) =
-  let rec string_of_conditions lst = match lst with
-    | [] -> "$\n"
-    | a :: tl -> string_of_or a ^ " --> " ^ string_of_conditions tl in
-  string_of_or conclusion ^ " --> " ^ string_of_conditions (Conditions.elements conditions)
+let string_of_adjacency ((conclusion, condition) : adjacency) =
+  string_of_or conclusion ^ " --> " ^ string_of_or condition ^ "\n"
 
 let string_of_graph (g : graph) =
   let lst = List.map string_of_adjacency g in
   List.fold_left (^) "" lst
+
+
+(*  **************  SEARCH  *************** *)
+
+let vertices (graph : graph) : Ors.t list =
+  List.map (fun (a, _) -> a) graph
+
+let condition (graph : graph) vertex : Ors.t option =
+  match List.find_opt (fun (a, _) -> a = vertex) graph with
+  | Some (_, cond) -> Some cond
+  | None -> None
 
 
 (*  **************  UPDATES  *************** *)
@@ -55,44 +62,104 @@ let ors_of_char c : Ors.t =
   Ors.singleton (Ands.singleton (Fact c))
 
 let union_ors a b : Ors.t =
-  Ors.union a b 
+  let remove_unnecessary ors =
+    let rec aux queue acc = match queue with
+      | [] -> Ors.of_list acc
+      | hd :: tl when List.exists (fun x -> Ands.subset x hd) (acc @ tl) -> aux tl acc
+      | hd :: tl -> aux tl (hd :: acc)
+    in
+    aux (Ors.elements ors) []
+  in
+  remove_unnecessary (Ors.union a b)
 
-let intersection_ors a b : Ors.t =
-  let a_elts = Ors.elements a in
-  let combine elt = List.map (Ands.union elt) a_elts in
-  let combination_list = List.flatten (List.map combine (Ors.elements b)) in
-  Ors.of_list combination_list
+let disunion_ors o : Ors.t list =
+  let ors_list = Ors.elements o in
+  List.map (Ors.singleton) ors_list
+
+let intersection_ors or1 or2 =
+  if or1 = or2 then or1 else
+    let combine_or_and o a =
+      Ors.elements o
+      |> List.map (Ands.union a)
+      |> List.map Ors.singleton
+      |> List.fold_left union_ors Ors.empty
+    in
+    Ors.elements or1
+    |> List.map (combine_or_and or2)
+    |> List.fold_left union_ors Ors.empty
 
 let not_of_ors ors =
   let not_of_fact fact = match fact with
-  | Facts.Fact f -> Facts.NotFact f
-  | Facts.NotFact f -> Facts.Fact f in
-  let facts_of_or_elt e : Facts.t list = Ands.elements e in
-  let not_facts_of_or_elt e = List.map not_of_fact (facts_of_or_elt e) in
-  let ors_of_non_facts e = List.map (fun elt -> Ors.singleton (Ands.singleton elt)) (not_facts_of_or_elt e) in
-  let union_of_non_facts e = List.fold_left (Ors.union) Ors.empty (ors_of_non_facts e) in
-  let list_of_not_unions = List.map union_of_non_facts (Ors.elements ors) in
-  List.fold_left intersection_ors (List.hd list_of_not_unions) list_of_not_unions
+    | Facts.Fact f -> Facts.NotFact f
+    | Facts.NotFact f -> Facts.Fact f
+  in
+  let not_of_ands ands =
+    Ands.elements ands
+    |> List.map not_of_fact
+    |> List.map Ands.singleton
+    |> List.map Ors.singleton
+    |> List.fold_left union_ors Ors.empty
+  in
+  let to_fold =
+    Ors.elements ors
+    |> List.map not_of_ands
+  in
+  List.fold_left intersection_ors (List.hd to_fold) to_fold
 
 let xor_ors a b =
   union_ors (intersection_ors a (not_of_ors b)) (intersection_ors (not_of_ors a) b)
 
-let add_adjacency graph condition conclusion : graph =
+let add_adjacency graph (conclusion, condition) : graph =
   let is_conclusion (conc, _) = (conc = conclusion) in
   let (satisfies, not_satisfies) = List.partition is_conclusion graph in
-  let new_adjacerncy = match satisfies with
-  | [] -> (conclusion, Conditions.singleton condition)
-  | (_, old_conditions) :: tl -> (conclusion, (Conditions.union old_conditions (Conditions.singleton condition)))
-  in new_adjacerncy :: not_satisfies
+  let new_adjacency = match satisfies with
+    | [] -> (conclusion, condition)
+    | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
+  in new_adjacency :: not_satisfies
 
+(*  **************  EXPANSION  *************** *)
 
+let add_contraposition g =
+  let contrapose (conc, cond) = (not_of_ors cond, not_of_ors conc) in
+  List.map contrapose g
+  |> List.fold_left add_adjacency []
+  |> List.append g
 
-(*  **************  SEARCH  *************** *)
+let expand_ors_in_conclusions g =
+  let split_on_or (conc, cond) = 
+    Ors.elements conc
+    |> List.map (fun x -> (Ors.singleton x, Ors.remove x conc))
+    |> List.map (fun (a,b) -> (a, not_of_ors b))
+    |> List.map (fun (a,b) -> (a, intersection_ors cond b))
+    |> List.cons (conc, cond)
+  in
+  let rec aux (queue : graph) acc =
+    match queue with
+    | [] -> acc
+    | (conc, cond) :: tl when Ors.cardinal conc = 1 -> aux tl (acc @ [(conc, cond)])
+    | hd :: tl -> aux tl (acc @ split_on_or hd) in
+  aux g []
+  |> List.fold_left add_adjacency []
 
-let vertices (graph : graph) : Ors.t list =
-  List.map (fun (a, _) -> a) graph
+let expand_ands_in_conclusions g =
+  let split_on_ands (conc, cond) =
+    Ors.choose conc
+    |> Ands.elements
+    |> List.map Ands.singleton
+    |> List.map Ors.singleton
+    |> List.map (fun x -> (x, cond))
+  in
+  let rec aux (queue : graph) acc =
+    match queue with
+    | [] -> acc
+    | (conc, cond) :: tl when Ors.cardinal conc > 1 -> aux tl (acc @ [(conc, cond)])
+    | (conc, cond) :: tl -> aux tl (acc @ split_on_ands (conc, cond))
+  in
+  aux g []
+  |> List.fold_left add_adjacency []
 
-let neighbors (graph : graph) vertex : Ors.t list =
-  match List.find_opt (fun (a, _) -> a = vertex) graph with
-  | Some (_, conditions) -> Conditions.elements conditions
-  | None -> []
+let expand_graph graph =
+  graph
+  |> add_contraposition
+  |> expand_ors_in_conclusions
+  |> expand_ands_in_conclusions

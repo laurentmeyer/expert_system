@@ -1,0 +1,111 @@
+A | B + C => D
+E => A | B
+=EF
+?D # should be undefined
+
+
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> E + !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F ->
+
+
+
+
+
+
+
+ 
+Pile : D
+========
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> E + !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F ->
+
+
+ 
+ Pile : D A
+========
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> E + !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F ->
+
+ 
+ Pile : D A E
+========
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> E + !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F -> 
+ 
+ Pile : D A   => on n'empile meme pas E car vrai
+========
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F -> 
+ 
+ Pile : D A !B
+========
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F -> 
+ 
+ Pile : D A !B  => !D n'est pas présent dans la liste (donc faux ou undefined), ni inclus dans un élément de la liste (donc faux)
+========
+ D -> A | B + C
+!A -> !D
+!B | !C -> !D
+!B -> !D + C
+!C -> !D + B
+ A | B -> E
+ A -> !B
+ B -> E + !A
+!E -> !A + !B
+ E ->
+ F -> 

@@ -1,4 +1,4 @@
-- étendre l'algo à tous les vertex qui prouvent la query
+- améliorer l'ajout d'adjecency en y enlevant les doublons, ainsi que les elements inclus dans d'autres
 - ajouter la détection d'undefined
 - quel comportement si "!A => B ; =C ; ?B" ?
 - challenger le fait qu'on ajoute les conditions aussi simplement dans les adjacences
