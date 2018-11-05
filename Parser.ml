@@ -136,6 +136,7 @@ let rec parse_expression tokens =
   (* NOT *)
   | Not :: Fact a :: tail -> parse_expression (Fact (Graph.not_of_ors a) :: tail)
   | Not :: LeftBracket :: tail -> parse_expression (Not :: parse_expression (LeftBracket :: parse_expression tail))
+  | Fact a :: Operand o :: Not :: tail -> parse_expression (Fact a :: Operand o :: parse_expression (Not :: tail))
   (* AND *)
   | Fact a :: Operand And :: Fact b :: tail -> parse_expression (Fact (Graph.intersection_ors a b) :: tail)
   (* OR *)
