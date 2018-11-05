@@ -176,9 +176,9 @@ let parse_rule (tokens : token list) (system : System.system) : System.system =
 let parse_truth tokens (system : System.system) =
   let rec aux t acc = match t with
   | [] -> acc
-  | Fact f :: tail -> aux tail (Graph.Ands.add (Graph.Ands.choose (Graph.Ors.choose f)) acc)
+  | Fact f :: tail -> aux tail (f :: acc)
   | _ -> raise (Parsing_exception "Unrecognized token in truths") in
-  { system with truths = aux tokens Graph.Ands.empty }
+  { system with truths = aux tokens system.truths }
 
 let parse_query tokens (system : System.system) =
   let rec aux t acc = match t with

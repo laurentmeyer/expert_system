@@ -5,7 +5,7 @@
 
 
 (initialisation de l'algorithme)
-on empile les requetes (queries) dans une pile q
+on empile les requetes (queries) dans des piles q
 on a une liste i d'implications (a -> b). Si un fait a est présent dans i mais n'a pas d'implication b, alors il est vrai
 on initialise avec q contenant un seul élément (la requete initiale)
 

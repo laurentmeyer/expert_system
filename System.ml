@@ -1,14 +1,14 @@
 type system =
   {
     rules : Graph.graph ;
-    truths : Graph.Ands.t ;
+    truths : Graph.Ors.t list ;
     queries : Graph.Facts.t list ;
   }
 
   let empty =
   {
     rules = [] ;
-    truths = Graph.Ands.empty ;
+    truths = [] ;
     queries = [] ;
   }
 
@@ -68,10 +68,16 @@ let rec string_of_queries queries =
   | fact :: [] -> Graph.string_of_fact fact
   | fact :: tl -> Graph.string_of_fact fact ^ ", " ^ string_of_queries tl
 
+let rec string_of_truths truths =
+  match truths with
+  | [] -> ""
+  | fact :: [] -> Graph.string_of_or fact
+  | fact :: tl -> Graph.string_of_or fact ^ ", " ^ string_of_truths tl
+
 
 let string_of_system (s : system) =
   "\n\n\n======EXPERT SYSTEM=====\n\ngraph:\n" ^ Graph.string_of_graph s.rules
-  ^ "\ntruths: " ^ Graph.string_of_and s.truths
+  ^ "\ntruths: " ^ string_of_truths s.truths
   ^ "\n\nqueries: " ^ string_of_queries s.queries
 
 let expand_system (s : system) =

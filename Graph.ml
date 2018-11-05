@@ -122,6 +122,8 @@ let add_adjacency graph (conclusion, condition) : graph =
       | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
     in new_adjacency :: not_satisfies
 
+
+
 (*  **************  EXPANSION  *************** *)
 
 let add_contraposition g =
