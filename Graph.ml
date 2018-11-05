@@ -14,6 +14,8 @@ module Ors = Set.Make(Ands) (* était edge*)
 type adjacency = Ors.t * Ors.t
 type graph = adjacency list
 
+exception Contradiction_exception of string
+
 (*  **************  SERIALIZATION  *************** *)
 
 let string_of_fact f =
@@ -66,11 +68,11 @@ let union_ors a b : Ors.t =
     let rec aux queue acc = match queue with
       | [] -> Ors.of_list acc
       | hd :: tl when List.exists (fun x -> Ands.subset x hd) (acc @ tl) -> aux tl acc
-      | hd :: tl -> aux tl (hd :: acc)
-    in
+      | hd :: tl -> aux tl (hd :: acc) in
     aux (Ors.elements ors) []
   in
-  remove_unnecessary (Ors.union a b)
+  Ors.union a b
+  |> remove_unnecessary 
 
 let disunion_ors o : Ors.t list =
   let ors_list = Ors.elements o in
@@ -110,12 +112,15 @@ let xor_ors a b =
   union_ors (intersection_ors a (not_of_ors b)) (intersection_ors (not_of_ors a) b)
 
 let add_adjacency graph (conclusion, condition) : graph =
-  let is_conclusion (conc, _) = (conc = conclusion) in
-  let (satisfies, not_satisfies) = List.partition is_conclusion graph in
-  let new_adjacency = match satisfies with
-    | [] -> (conclusion, condition)
-    | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
-  in new_adjacency :: not_satisfies
+  if condition = Ors.empty && List.mem (not_of_ors conclusion, Ors.empty) graph
+  then raise (Contradiction_exception "Contradiction")
+  else
+    let is_conclusion (conc, _) = (conc = conclusion) in
+    let (satisfies, not_satisfies) = List.partition is_conclusion graph in
+    let new_adjacency = match satisfies with
+      | [] -> (conclusion, condition)
+      | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
+    in new_adjacency :: not_satisfies
 
 (*  **************  EXPANSION  *************** *)
 
@@ -158,8 +163,41 @@ let expand_ands_in_conclusions g =
   aux g []
   |> List.fold_left add_adjacency []
 
+let remove_inconsistencies g =
+  let remove_ors_inconsistency (conc, cond) =
+    let ands_has_inconsistency a =
+      let rec aux lst =
+        match lst with
+        | [] -> false
+        | Facts.Fact f :: tl -> List.mem (Facts.NotFact f) tl || aux tl
+        | Facts.NotFact f :: tl -> List.mem (Facts.Fact f) tl || aux tl in
+      aux (Ands.elements a) in
+    let rec aux queue acc = match queue with
+      | [] -> Ors.of_list acc
+      | hd :: tl when ands_has_inconsistency hd -> aux tl acc
+      | hd :: tl -> aux tl (hd :: acc) in
+    (conc, aux (Ors.elements cond) [])
+  in
+  List.map remove_ors_inconsistency g
+  |> List.filter (fun (a, b) -> Ors.is_empty b = false)
+
+let deduct_truths g =
+  let ors_had_truth ors =
+    Ors.elements ors
+    |> List.map (fun elt -> (elt, Ors.remove elt ors))
+    |> List.map (fun (a, b) -> (not_of_ors (Ors.singleton a), b))
+    |> List.exists (fun (a, b) -> Ors.subset a b)
+  in
+  g
+  |> List.map (fun (a, b) -> if ors_had_truth b then (a, Ors.empty) else (a, b))
+  |> List.fold_left add_adjacency []
+
+
 let expand_graph graph =
   graph
+  |> remove_inconsistencies
   |> add_contraposition
+  (* |> deduct_truths *)
   |> expand_ors_in_conclusions
   |> expand_ands_in_conclusions
+  |> deduct_truths
