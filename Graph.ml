@@ -119,9 +119,14 @@ let add_adjacency graph (conclusion, condition) : graph =
     let (satisfies, not_satisfies) = List.partition is_conclusion graph in
     let new_adjacency = match satisfies with
       | [] -> (conclusion, condition)
+      | _ when condition = Ors.empty -> (conclusion, condition)
       | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
     in new_adjacency :: not_satisfies
 
+let add_truths g t =
+  t
+  |> List.map (fun x -> (x, Ors.empty))
+  |> List.fold_left add_adjacency g
 
 
 (*  **************  EXPANSION  *************** *)
@@ -197,9 +202,9 @@ let deduct_truths g =
 
 let expand_graph graph =
   graph
-  |> remove_inconsistencies
+  |> remove_inconsistencies (* a mettre directement dans l'ajout d'adjacency ?? *)
   |> add_contraposition
   (* |> deduct_truths *)
   |> expand_ors_in_conclusions
   |> expand_ands_in_conclusions
-  |> deduct_truths
+  |> deduct_truths (* a mettre directement dans l'ajout d'adjacency ?? *)
