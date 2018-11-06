@@ -123,6 +123,14 @@ let add_adjacency graph (conclusion, condition) : graph =
       | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
     in new_adjacency :: not_satisfies
 
+let delete_adjacency graph conclusion : graph =
+    let is_not_conclusion (conc, _) = (conc != conclusion) in
+    List.filter is_not_conclusion graph
+
+let replace_adjacency graph (conclusion, condition) : graph =
+  add_adjacency (delete_adjacency graph conclusion) (conclusion, condition)
+
+
 let add_truths g t =
   t
   |> List.map (fun x -> (x, Ors.empty))

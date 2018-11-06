@@ -1,5 +1,5 @@
 A | B + C => D
 E => A | B
-F => !A
+F => C
 =EF
-?D
+?D #should be 
