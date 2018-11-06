@@ -57,6 +57,14 @@ let condition (graph : graph) vertex : Ors.t option =
   | Some (_, cond) -> Some cond
   | None -> None
 
+let not_in_graph g o =
+  not (List.mem o (vertices g))
+
+let conclusions (graph : graph) vertex : Ors.t list =
+  let unsorted = List.filter (fun x -> Ors.subset x vertex) (vertices graph) in
+  let comp o1 o2 = Ors.cardinal o2 - Ors.cardinal o1 in
+  List.sort comp unsorted
+
 let split_ors_singleton o =
   Ors.choose o
   |> Ands.elements
