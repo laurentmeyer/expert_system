@@ -2,4 +2,4 @@ A | B + C => D
 E => A | B
 F => C
 =EF
-?D #should be 
+?D #should be true

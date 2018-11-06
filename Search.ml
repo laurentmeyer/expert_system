@@ -27,24 +27,27 @@ let rec search_query graph query =
       match Graph.condition g conclusion with
       | None -> search g (List.tl p)
       | Some o when o = Graph.Ors.empty -> search g (List.tl p)
-      | Some o -> begin
-          let choose = Graph.Ors.choose o in
-          let ands = choose
-            |> Graph.Ands.elements
-            |> List.map Graph.Ands.singleton
-            |> List.map Graph.Ors.singleton in
-          let new_g = List.fold_left search_query g ands in
-          let are_all_true =
-            List.map (query_status new_g) ands
-            |> List.fold_left Pervasives.(&&) true
-          in
-          (* print_endline ("choose:\n" ^ Graph.string_of_or choose) ; *)
-          print_endline ("new_graph:\n" ^ Graph.string_of_graph new_g) ;
-          if are_all_true then search (Graph.add_truths new_g [List.hd p]) (List.tl p)
-          else if Graph.Ors.cardinal o > 1 then
-          let shrunk_graph = Graph.replace_adjacency g (conclusion, Graph.Ors.remove choose o) in
-            search shrunk_graph p
-          else search (Graph.delete_adjacency g conclusion) (List.tl p)
+      | Some o ->
+        begin
+          let first_ors = Graph.Ors.singleton (Graph.Ors.choose o) in
+          let split = Graph.split_ors_singleton first_ors in
+          match List.find_opt (fun x -> List.mem x p) split with
+          | Some _ -> search (Graph.remove_adjacency g (conclusion, first_ors)) (List.tl p)
+          | None ->
+            begin
+              let first_fact = List.hd split in
+              match Graph.condition g first_fact with
+              | None -> search (Graph.remove_adjacency g (conclusion, first_ors)) p
+              | Some o when o != Graph.Ors.empty -> search g (first_fact :: p)
+              | Some o -> begin
+                  if List.tl split = [] then search (Graph.add_truths g [conclusion]) (List.tl p) 
+                  else 
+                    let new_condition = List.fold_left Graph.intersection_ors (List.hd (List.tl split)) (List.tl split) in
+                    print_endline ("new comdition: " ^ Graph.string_of_or new_condition) ;
+                    let new_graph = Graph.replace_adjacency g (conclusion, new_condition) in
+                    search new_graph p
+                end
+            end
         end
   in
   let q = if query_status graph query then [] else [query; Graph.not_of_ors query] in

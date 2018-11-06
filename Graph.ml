@@ -57,6 +57,11 @@ let condition (graph : graph) vertex : Ors.t option =
   | Some (_, cond) -> Some cond
   | None -> None
 
+let split_ors_singleton o =
+  Ors.choose o
+  |> Ands.elements
+  |> List.map Ands.singleton
+  |> List.map Ors.singleton
 
 (*  **************  UPDATES  *************** *)
 
@@ -124,8 +129,16 @@ let add_adjacency graph (conclusion, condition) : graph =
     in new_adjacency :: not_satisfies
 
 let delete_adjacency graph conclusion : graph =
-    let is_not_conclusion (conc, _) = (conc != conclusion) in
-    List.filter is_not_conclusion graph
+  let is_not_conclusion (conc, _) = (conc != conclusion) in
+  List.filter is_not_conclusion graph
+
+let remove_adjacency graph (conclusion, condition) : graph =
+    let is_conclusion (conc, _) = (conc = conclusion) in
+    let (satisfies, not_satisfies) = List.partition is_conclusion graph in
+    let (_, old_conditions) = List.hd satisfies in
+    let new_conditions = Ors.remove (Ors.choose condition) old_conditions in
+    if Ors.is_empty new_conditions then not_satisfies
+    else not_satisfies @ [(conclusion, new_conditions)]
 
 let replace_adjacency graph (conclusion, condition) : graph =
   add_adjacency (delete_adjacency graph conclusion) (conclusion, condition)
