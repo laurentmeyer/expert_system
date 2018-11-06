@@ -2,7 +2,7 @@ type system =
   {
     rules : Graph.graph ;
     truths : Graph.Ors.t list ;
-    queries : Graph.Facts.t list ;
+    queries : Graph.Ors.t list ;
   }
 
   let empty =
@@ -65,8 +65,8 @@ let dummy_system =
 let rec string_of_queries queries =
   match queries with
   | [] -> ""
-  | fact :: [] -> Graph.string_of_fact fact
-  | fact :: tl -> Graph.string_of_fact fact ^ ", " ^ string_of_queries tl
+  | fact :: [] -> Graph.string_of_or fact
+  | fact :: tl -> Graph.string_of_or fact ^ ", " ^ string_of_queries tl
 
 let rec string_of_truths truths =
   match truths with
