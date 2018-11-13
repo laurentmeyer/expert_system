@@ -95,11 +95,11 @@ let intersection_ors or1 or2 =
     |> List.map (combine_or_and or2)
     |> List.fold_left union_ors Ors.empty
 
+let not_of_fact fact = match fact with
+  | Facts.Fact f -> Facts.NotFact f
+  | Facts.NotFact f -> Facts.Fact f
+
 let not_of_ors ors =
-  let not_of_fact fact = match fact with
-    | Facts.Fact f -> Facts.NotFact f
-    | Facts.NotFact f -> Facts.Fact f
-  in
   let not_of_ands ands =
     Ands.elements ands
     |> List.map not_of_fact
@@ -118,50 +118,47 @@ let xor_ors a b =
 
 let facts_are_positive (conclusion : Ors.t) : bool =
   let rec aux = function
-  | []                      -> true
-  | (Facts.NotFact t)::tail -> false
-  | (Facts.Fact t)::tail    -> aux tail
+    | []                      -> true
+    | (Facts.NotFact t)::tail -> false
+    | (Facts.Fact t)::tail    -> aux tail
   in aux (Ands.elements (Ors.choose conclusion))
 
 (* let expand_ands_in_conclusions g : graph =
-  let split_on_ands (conc, cond) =
+   let split_on_ands (conc, cond) =
     Ors.choose conc
     |> Ands.elements
     |> List.map Ands.singleton
     |> List.map Ors.singleton
     |> List.map (fun x -> (x, cond))
-  in
-  let rec aux (queue : graph) acc =
+   in
+   let rec aux (queue : graph) acc =
     match queue with
     | [] -> acc
     | (conc, cond) :: tl when Ors.cardinal conc > 1 -> aux tl (acc @ [(conc, cond)])
     | (conc, cond) :: tl -> aux tl (acc @ split_on_ands (conc, cond))
-  in
-  aux g []
+   in
+   aux g []
 
-let expand_ors_in_conditions g =
-  let split_on_ors (conc, cond) =
+   let expand_ors_in_conditions g =
+   let split_on_ors (conc, cond) =
     Ors.elements cond
     |> List.map  *)
 
-  (* let rec aux (queue : graph) acc =
-    match queue with
-    | [] -> acc
-    | (conc, cond) :: tl when Ors.cardinal cond > 1 -> aux tl (acc @ [(conc, cond)])
-    | (conc, cond) :: tl                            -> aux tl (acc @ split_on_ands (conc, cond)) *)
+(* let rec aux (queue : graph) acc =
+   match queue with
+   | [] -> acc
+   | (conc, cond) :: tl when Ors.cardinal cond > 1 -> aux tl (acc @ [(conc, cond)])
+   | (conc, cond) :: tl                            -> aux tl (acc @ split_on_ands (conc, cond)) *)
 
-(* let adjacency_to_graph (conclusion, condition) : graph =
-   let tmp_conc = Ands.elements (Ors.choose conclusion) in
-   let tmp_cond = Ors.elements condition in
-   List.map (fun cc -> List.map (fun x -> (cc, x)) tmp_cond) tmp_conc
-   |> List.flatten *)
-   
+
 let adjacency_to_graph (conclusion, condition) : graph =
   let tmp_conc = Ands.elements (Ors.choose conclusion) in
   List.map (fun cc -> cc, condition) tmp_conc
 
 let add_adjacency graph (conclusion, condition) =
-  let is_conclusion (conc, _) = (conc = conclusion) in
+  (* if condition = Ors.empty && List.mem (not_of_fact conclusion, Ors.empty) graph then raise (Contradiction_exception "Contradiction") *)
+  (* else *)
+    let is_conclusion (conc, _) = (conc = conclusion) in
     let (satisfies, not_satisfies) = List.partition is_conclusion graph in
     let new_adjacency = match satisfies with
       | [] -> (conclusion, condition)
@@ -173,24 +170,14 @@ let add_rule graph (conclusion, condition) : graph =
   if Ors.cardinal conclusion > 1 then raise (Contradiction_exception "Or in conclusion")
   else if facts_are_positive conclusion = false then raise (Contradiction_exception "Not in conclusion")
   else adjacency_to_graph (conclusion, condition)
-  |> List.fold_left add_adjacency graph
+    |> List.fold_left add_adjacency graph
 
-
-  (* else if condition = Ors.empty && List.mem (not_of_ors conclusion, Ors.empty) graph then raise (Contradiction_exception "Contradiction")
-  else
-    let is_conclusion (conc, _) = (conc = conclusion) in
-    let (satisfies, not_satisfies) = List.partition is_conclusion graph in
-    let new_adjacency = match satisfies with
-      | [] -> (conclusion, condition)
-      | _ when condition = Ors.empty -> (conclusion, condition)
-      | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
-    in new_adjacency :: not_satisfies *)
 
 (* let delete_adjacency graph conclusion : graph =
-  let is_not_conclusion (conc, _) = (conc != conclusion) in
-  List.filter is_not_conclusion graph
+   let is_not_conclusion (conc, _) = (conc != conclusion) in
+   List.filter is_not_conclusion graph
 
-let remove_adjacency graph (conclusion, condition) : graph =
+   let remove_adjacency graph (conclusion, condition) : graph =
     let is_conclusion (conc, _) = (conc = conclusion) in
     let (satisfies, not_satisfies) = List.partition is_conclusion graph in
     let (_, old_conditions) = List.hd satisfies in
@@ -198,9 +185,8 @@ let remove_adjacency graph (conclusion, condition) : graph =
     if Ors.is_empty new_conditions then not_satisfies
     else not_satisfies @ [(conclusion, new_conditions)]
 
-let replace_adjacency graph (conclusion, condition) : graph =
-  add_adjacency (delete_adjacency graph conclusion) (conclusion, condition) *)
-
+   let replace_adjacency graph (conclusion, condition) : graph =
+   add_adjacency (delete_adjacency graph conclusion) (conclusion, condition) *)
 
 let add_truths g t =
   t
@@ -217,24 +203,24 @@ let add_contraposition g =
   |> List.append g *)
 
 (* let expand_ors_in_conclusions g =
-  let split_on_or (conc, cond) = 
+   let split_on_or (conc, cond) = 
     Ors.elements conc
     |> List.map (fun x -> (Ors.singleton x, Ors.remove x conc))
     |> List.map (fun (a,b) -> (a, not_of_ors b))
     |> List.map (fun (a,b) -> (a, intersection_ors cond b))
     |> List.cons (conc, cond)
-  in
-  let rec aux (queue : graph) acc =
+   in
+   let rec aux (queue : graph) acc =
     match queue with
     | [] -> acc
     | (conc, cond) :: tl when Ors.cardinal conc = 1 -> aux tl (acc @ [(conc, cond)])
     | hd :: tl -> aux tl (acc @ split_on_or hd) in
-  aux g []
-  |> List.fold_left add_adjacency [] *)
-   
+   aux g []
+   |> List.fold_left add_adjacency [] *)
+
 
 (* let remove_inconsistencies g =
-  let remove_ors_inconsistency (conc, cond) =
+   let remove_ors_inconsistency (conc, cond) =
     let ands_has_inconsistency a =
       let rec aux lst =
         match lst with
@@ -247,9 +233,9 @@ let add_contraposition g =
       | hd :: tl when ands_has_inconsistency hd -> aux tl acc
       | hd :: tl -> aux tl (hd :: acc) in
     (conc, aux (Ors.elements cond) [])
-  in
-  List.map remove_ors_inconsistency g
-  |> List.filter (fun (a, b) -> Ors.is_empty b = false) *)
+   in
+   List.map remove_ors_inconsistency g
+   |> List.filter (fun (a, b) -> Ors.is_empty b = false) *)
 
 let deduct_truths g =
   let ors_had_truth ors =
