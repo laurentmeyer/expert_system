@@ -5,7 +5,7 @@ type system =
     queries : Graph.Ors.t list ;
   }
 
-  let empty =
+ let empty =
   {
     rules = [] ;
     truths = [] ;

@@ -7,54 +7,67 @@ let rec string_of_pile p =
   | fact :: [] -> Graph.string_of_or fact
   | fact :: tl -> Graph.string_of_or fact ^ " |> " ^ string_of_pile tl
 
+type t =
+  {
+    kb : Graph.graph ;
+    inferred : (Graph.Facts.t * bool) list ;
+    queue : Graph.Facts.t list ;
+    path : Graph.Facts.t list
+  }
 
 
+(*  **************  SERIALIZATION  *************** *)
 
-(*  **************  SEARCH  *************** *)
+let string_of_inferred (inferred : (Graph.Facts.t * bool) list) =
+  let rec aux lst =
+    match lst with
+    | [] -> ""
+    | (fact, b) :: [] -> Graph.string_of_fact fact ^ " " ^ (string_of_bool b)
+    | (fact, b) :: tl -> Graph.string_of_fact fact ^ " " ^ (string_of_bool b) ^ "\n" ^ aux tl
+  in aux inferred
 
-(* let query_status g q =
-  match Graph.condition g q with
-  | Some o when o = Graph.Ors.empty -> true
-  | _ -> false
-
-let rec search_query graph query =
-  let rec search g p =
-    print_endline ("\npile: " ^ string_of_pile p) ;
-    print_endline ("graph:\n" ^ Graph.string_of_graph g) ;
-    if p = [] then g
-    else
-      let conclusion = List.hd p in
-      match Graph.condition g conclusion with
-      | None -> search g (List.tl p)
-      | Some o when o = Graph.Ors.empty -> search g (List.tl p)
-      | Some o ->
-        begin
-          let first_ors = Graph.Ors.singleton (Graph.Ors.choose o) in
-          let split = Graph.split_ors_singleton first_ors in
-          match List.find_opt (fun x -> List.mem x p) split with
-          | Some _ -> search (Graph.remove_adjacency g (conclusion, first_ors)) (List.tl p)
-          | None ->
-            begin
-              let first_fact = List.hd split in
-              match Graph.condition g first_fact with
-              | None -> search (Graph.remove_adjacency g (conclusion, first_ors)) p
-              | Some o when o != Graph.Ors.empty -> search g (first_fact :: p)
-              | Some o -> begin
-                  if List.tl split = [] then search (Graph.add_truths g [conclusion]) (List.tl p) 
-                  else 
-                    let new_condition = List.fold_left Graph.intersection_ors (List.hd (List.tl split)) (List.tl split) in
-                    print_endline ("new comdition: " ^ Graph.string_of_or new_condition) ;
-                    let new_graph = Graph.replace_adjacency g (conclusion, new_condition) in
-                    search new_graph p
-                end
-            end
-        end
+let string_of_search (s : t) =
+  let rec string_of_facts = function
+  | [] -> ""
+  | fact :: [] -> Graph.string_of_fact fact
+  | fact :: tl -> Graph.string_of_fact fact ^ " |> " ^ string_of_facts tl
   in
-  let q = if query_status graph query then [] else [query; Graph.not_of_ors query] in
-  search graph q *)
+  "** Knowledge base:\n" ^ Graph.string_of_graph s.kb ^ "\n" ^
+  "** Inferred table:\n" ^ string_of_inferred s.inferred ^ "\n" ^
+  "** Queue:\n" ^ string_of_facts s.queue ^ "\n" ^
+  "** Path:\n" ^ string_of_facts s.path
 
-let search_all (system : System.system) =
-  (* let searched_graph = List.fold_left search_query system.rules system.queries in *)
-  (* let print_status q = Printf.printf "%S is %B\n" (Graph.string_of_or q) (query_status searched_graph q) in *)
-  print_newline () ;
-  (* List.iter print_status system.queries *)
+
+(*  **************  INITIALIZATION  *************** *)
+
+
+let list_facts (kb : Graph.graph) : Graph.Facts.t list =
+  let get_facts (conc, cond) =
+    conc :: Graph.not_of_fact conc :: (cond
+             |> Graph.Ors.elements
+             |> List.map Graph.Ands.elements
+             |> List.flatten
+             |> List.map (fun f -> [f ; Graph.not_of_fact f])
+             |> List.flatten)
+  in
+  let rec aux acc lst = match lst with
+    | head::tail  -> aux (get_facts head @ acc) tail 
+    | []          -> acc
+  in
+  List.sort_uniq (Graph.Facts.compare) (aux [] kb)
+  
+let init_inferred kb =
+  list_facts kb
+  |> List.map (fun x -> (x, false))
+
+let init_search (system : System.system) : t =
+  {
+    kb = system.rules ;
+    inferred = init_inferred system.rules ;
+    queue = [] ;
+    path = []
+  }
+
+let search_all (system : System.system) : unit =
+  let s = init_search system in
+  print_endline (string_of_search s)

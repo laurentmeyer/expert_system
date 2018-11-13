@@ -6,7 +6,7 @@ let () =
       (* |> System.expand_system in *)
     print_endline (System.string_of_system system)
     ;
-    (* Search.search_all system *)
+    Search.search_all system
   with
   | Failure err -> raise (Failure err)
   | Parser.Parsing_exception str -> Printf.printf "Invalid instruction near: {%s}\n" str
