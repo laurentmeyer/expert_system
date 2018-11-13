@@ -11,6 +11,7 @@ type t =
 
 
 
+
 (*  **************  SERIALIZATION  *************** *)
 
 let string_of_inferred (inferred : (Graph.Facts.t * bool) list) =
@@ -68,9 +69,10 @@ let init_search (system : System.system) : t =
   }
 
 let search_one (s : t) q : t =
-  let new_s = { s with queue = [Graph.Ands.choose (Graph.Ors.choose q)]} in
-  print_endline (string_of_search new_s) ;
-  new_s
+  (* rajouter la recherche de la contradiction ? *)
+  let s = { s with queue = [Graph.Ands.choose (Graph.Ors.choose q)] } in
+  print_endline (string_of_search s) ;
+  { s with path = [] }
 
 
 let search_all (system : System.system) : unit =
