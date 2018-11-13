@@ -1,12 +1,3 @@
-
-(*  **************  SERIALIZATION  *************** *)
-
-let rec string_of_pile p =
-  match p with
-  | [] -> ""
-  | fact :: [] -> Graph.string_of_or fact
-  | fact :: tl -> Graph.string_of_or fact ^ " |> " ^ string_of_pile tl
-
 type t =
   {
     kb : Graph.graph ;
@@ -14,6 +5,10 @@ type t =
     queue : Graph.Facts.t list ;
     path : Graph.Facts.t list
   }
+
+
+(*  **************  SEARCH  ********************** *)
+
 
 
 (*  **************  SERIALIZATION  *************** *)
@@ -40,7 +35,6 @@ let string_of_search (s : t) =
 
 (*  **************  INITIALIZATION  *************** *)
 
-
 let list_facts (kb : Graph.graph) : Graph.Facts.t list =
   let get_facts (conc, cond) =
     conc :: Graph.not_of_fact conc :: (cond
@@ -60,10 +54,15 @@ let init_inferred kb =
   list_facts kb
   |> List.map (fun x -> (x, false))
 
+let init_kb (system : System.system) : Graph.graph =
+  Graph.add_truths system.rules system.truths
+
 let init_search (system : System.system) : t =
+  let knowledge_base = init_kb system
+  in
   {
-    kb = system.rules ;
-    inferred = init_inferred system.rules ;
+    kb = knowledge_base;
+    inferred = init_inferred knowledge_base ;
     queue = [] ;
     path = []
   }

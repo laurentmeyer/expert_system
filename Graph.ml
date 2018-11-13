@@ -191,7 +191,7 @@ let add_rule graph (conclusion, condition) : graph =
 let add_truths g t =
   t
   |> List.map (fun x -> (x, Ors.empty))
-  |> List.fold_left add_adjacency g
+  |> List.fold_left add_rule g
 
 
 (*  **************  EXPANSION  *************** *)
