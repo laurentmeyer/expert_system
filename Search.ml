@@ -12,7 +12,7 @@ let rec string_of_pile p =
 
 (*  **************  SEARCH  *************** *)
 
-let query_status g q =
+(* let query_status g q =
   match Graph.condition g q with
   | Some o when o = Graph.Ors.empty -> true
   | _ -> false
@@ -51,10 +51,10 @@ let rec search_query graph query =
         end
   in
   let q = if query_status graph query then [] else [query; Graph.not_of_ors query] in
-  search graph q
+  search graph q *)
 
 let search_all (system : System.system) =
-  let searched_graph = List.fold_left search_query system.rules system.queries in
-  let print_status q = Printf.printf "%S is %B\n" (Graph.string_of_or q) (query_status searched_graph q) in
+  (* let searched_graph = List.fold_left search_query system.rules system.queries in *)
+  (* let print_status q = Printf.printf "%S is %B\n" (Graph.string_of_or q) (query_status searched_graph q) in *)
   print_newline () ;
-  List.iter print_status system.queries
+  (* List.iter print_status system.queries *)

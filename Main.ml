@@ -2,8 +2,8 @@ let () =
   try
     let filename = Sys.argv.(1) in
     let system =
-      Parser.parse_file filename
-      |> System.expand_system in
+      Parser.parse_file filename in
+      (* |> System.expand_system in *)
     print_endline (System.string_of_system system)
     ;
     (* Search.search_all system *)

@@ -11,7 +11,7 @@ end
 
 module Ands = Set.Make(Facts) (* était vertex*)
 module Ors = Set.Make(Ands) (* était edge*)
-type adjacency = Ors.t * Ors.t
+type adjacency = Facts.t * Ors.t
 type graph = adjacency list
 
 exception Contradiction_exception of string
@@ -40,7 +40,7 @@ let string_of_or o =
   in aux (Ors.elements o)
 
 let string_of_adjacency ((conclusion, condition) : adjacency) =
-  string_of_or conclusion ^ " --> " ^ string_of_or condition ^ "\n"
+  string_of_fact conclusion ^ " --> " ^ string_of_or condition ^ "\n"
 
 let string_of_graph (g : graph) =
   let lst = List.map string_of_adjacency g in
@@ -49,19 +49,19 @@ let string_of_graph (g : graph) =
 
 (*  **************  SEARCH  *************** *)
 
-let vertices (graph : graph) : Ors.t list =
+let vertices (graph : graph) : Facts.t list =
   List.map (fun (a, _) -> a) graph
 
-let condition (graph : graph) vertex : Ors.t option =
+(* let condition (graph : graph) vertex : Ors.t option =
   match List.find_opt (fun (a, _) -> a = vertex) graph with
   | Some (_, cond) -> Some cond
-  | None -> None
+  | None -> None *)
 
-let split_ors_singleton o =
+(* let split_ors_singleton o =
   Ors.choose o
   |> Ands.elements
   |> List.map Ands.singleton
-  |> List.map Ors.singleton
+  |> List.map Ors.singleton *)
 
 (*  **************  UPDATES  *************** *)
 
@@ -116,18 +116,67 @@ let not_of_ors ors =
 let xor_ors a b =
   union_ors (intersection_ors a (not_of_ors b)) (intersection_ors (not_of_ors a) b)
 
-let facts_are_positives (conclusion : Ors.t) : bool =
+let facts_are_positive (conclusion : Ors.t) : bool =
   let rec aux = function
   | []                      -> true
   | (Facts.NotFact t)::tail -> false
   | (Facts.Fact t)::tail    -> aux tail
   in aux (Ands.elements (Ors.choose conclusion))
 
-let add_adjacency graph (conclusion, condition) : graph =
+(* let expand_ands_in_conclusions g : graph =
+  let split_on_ands (conc, cond) =
+    Ors.choose conc
+    |> Ands.elements
+    |> List.map Ands.singleton
+    |> List.map Ors.singleton
+    |> List.map (fun x -> (x, cond))
+  in
+  let rec aux (queue : graph) acc =
+    match queue with
+    | [] -> acc
+    | (conc, cond) :: tl when Ors.cardinal conc > 1 -> aux tl (acc @ [(conc, cond)])
+    | (conc, cond) :: tl -> aux tl (acc @ split_on_ands (conc, cond))
+  in
+  aux g []
+
+let expand_ors_in_conditions g =
+  let split_on_ors (conc, cond) =
+    Ors.elements cond
+    |> List.map  *)
+
+  (* let rec aux (queue : graph) acc =
+    match queue with
+    | [] -> acc
+    | (conc, cond) :: tl when Ors.cardinal cond > 1 -> aux tl (acc @ [(conc, cond)])
+    | (conc, cond) :: tl                            -> aux tl (acc @ split_on_ands (conc, cond)) *)
+
+(* let adjacency_to_graph (conclusion, condition) : graph =
+   let tmp_conc = Ands.elements (Ors.choose conclusion) in
+   let tmp_cond = Ors.elements condition in
+   List.map (fun cc -> List.map (fun x -> (cc, x)) tmp_cond) tmp_conc
+   |> List.flatten *)
+   
+let adjacency_to_graph (conclusion, condition) : graph =
+  let tmp_conc = Ands.elements (Ors.choose conclusion) in
+  List.map (fun cc -> cc, condition) tmp_conc
+
+let add_adjacency graph (conclusion, condition) =
+  let is_conclusion (conc, _) = (conc = conclusion) in
+    let (satisfies, not_satisfies) = List.partition is_conclusion graph in
+    let new_adjacency = match satisfies with
+      | [] -> (conclusion, condition)
+      | _ when condition = Ors.empty -> (conclusion, condition)
+      | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
+    in new_adjacency :: not_satisfies  
+
+let add_rule graph (conclusion, condition) : graph =
   if Ors.cardinal conclusion > 1 then raise (Contradiction_exception "Or in conclusion")
-  else if facts_are_positives conclusion = false then raise (Contradiction_exception "Not in conclusion")
-  else if condition = Ors.empty && List.mem (not_of_ors conclusion, Ors.empty) graph
-  then raise (Contradiction_exception "Contradiction")
+  else if facts_are_positive conclusion = false then raise (Contradiction_exception "Not in conclusion")
+  else adjacency_to_graph (conclusion, condition)
+  |> List.fold_left add_adjacency graph
+
+
+  (* else if condition = Ors.empty && List.mem (not_of_ors conclusion, Ors.empty) graph then raise (Contradiction_exception "Contradiction")
   else
     let is_conclusion (conc, _) = (conc = conclusion) in
     let (satisfies, not_satisfies) = List.partition is_conclusion graph in
@@ -135,9 +184,9 @@ let add_adjacency graph (conclusion, condition) : graph =
       | [] -> (conclusion, condition)
       | _ when condition = Ors.empty -> (conclusion, condition)
       | (_, old_conditions) :: tl -> (conclusion, (union_ors old_conditions condition))
-    in new_adjacency :: not_satisfies
+    in new_adjacency :: not_satisfies *)
 
-let delete_adjacency graph conclusion : graph =
+(* let delete_adjacency graph conclusion : graph =
   let is_not_conclusion (conc, _) = (conc != conclusion) in
   List.filter is_not_conclusion graph
 
@@ -150,7 +199,7 @@ let remove_adjacency graph (conclusion, condition) : graph =
     else not_satisfies @ [(conclusion, new_conditions)]
 
 let replace_adjacency graph (conclusion, condition) : graph =
-  add_adjacency (delete_adjacency graph conclusion) (conclusion, condition)
+  add_adjacency (delete_adjacency graph conclusion) (conclusion, condition) *)
 
 
 let add_truths g t =
@@ -182,35 +231,6 @@ let add_contraposition g =
     | hd :: tl -> aux tl (acc @ split_on_or hd) in
   aux g []
   |> List.fold_left add_adjacency [] *)
-
-let expand_ands_in_conclusions g =
-  let split_on_ands (conc, cond) =
-    Ors.choose conc
-    |> Ands.elements
-    |> List.map Ands.singleton
-    |> List.map Ors.singleton
-    |> List.map (fun x -> (x, cond))
-  in
-  let rec aux (queue : graph) acc =
-    match queue with
-    | [] -> acc
-    | (conc, cond) :: tl when Ors.cardinal conc > 1 -> aux tl (acc @ [(conc, cond)])
-    | (conc, cond) :: tl -> aux tl (acc @ split_on_ands (conc, cond))
-  in
-  aux g []
-  |> List.fold_left add_adjacency []
-
-(* let expand_ors_in_conditions g =
-  let split_on_ors (conc, cond) =
-    Ors.elements cond
-    |> List.map 
-
-  let rec aux (queue : graph) acc =
-    match queue with
-    | [] -> acc
-    | (conc, cond) :: tl when Ors.cardinal cond > 1 -> aux tl (acc @ [(conc, cond)])
-    | (conc, cond) :: tl                            -> aux tl (acc @ split_on_ands (conc, cond)) *)
-
    
 
 (* let remove_inconsistencies g =
@@ -250,5 +270,5 @@ let expand_graph graph =
   (* |> add_contraposition *)
   (* |> deduct_truths *)
   (* |> expand_ors_in_conclusions *)
-  |> expand_ands_in_conclusions
+  (* |> expand_ands_in_conclusions *)
   |> deduct_truths (* a mettre directement dans l'ajout d'adjacency ?? *)

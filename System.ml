@@ -81,7 +81,7 @@ let string_of_system (s : system) =
   ^ "\n\nqueries: " ^ string_of_queries s.queries
   ^ "\n\n=========================\n"
 
-let expand_system (s : system) =
+(* let expand_system (s : system) =
   let expanded_graph = Graph.expand_graph (s.rules) in
   let graph_with_truths = Graph.add_truths expanded_graph s.truths in
-  {s with rules = graph_with_truths}
+  {s with rules = graph_with_truths} *)

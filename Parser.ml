@@ -170,7 +170,7 @@ let parse_rule (tokens : token list) (system : System.system) : System.system =
   let (left_side, right_side) = split_rule tokens in
   let new_left = parsed_to_ors (parse_expression left_side) in
   let new_right = parsed_to_ors (parse_expression right_side) in
-  let new_graph = Graph.add_adjacency system.rules (new_right, new_left) in
+  let new_graph = Graph.add_rule system.rules (new_right, new_left) in
   { system with rules = new_graph }
 
 let parse_truth tokens (system : System.system) =

@@ -1,4 +1,5 @@
 
-A|C+D => B+G
+A|C+D|P => B+G+H
+E => B
 =A
 ?B
