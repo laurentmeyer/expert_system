@@ -3,7 +3,7 @@ type t =
     kb : Graph.graph ;
     inferred : (Graph.Facts.t * bool) list ;
     queue : Graph.Facts.t list ;
-    path : Graph.Facts.t list
+    path : Graph.Facts.t list ;
   }
 
 
@@ -64,9 +64,16 @@ let init_search (system : System.system) : t =
     kb = knowledge_base;
     inferred = init_inferred knowledge_base ;
     queue = [] ;
-    path = []
+    path = [] ;
   }
+
+let search_one (s : t) q : t =
+  let new_s = { s with queue = [Graph.Ands.choose (Graph.Ors.choose q)]} in
+  print_endline (string_of_search new_s) ;
+  new_s
+
 
 let search_all (system : System.system) : unit =
   let s = init_search system in
-  print_endline (string_of_search s)
+  let final_search = List.fold_left search_one s system.queries in
+  ()
