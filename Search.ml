@@ -1,3 +1,5 @@
+type 'a tree = Leaf of 'a | NodeAnd of 'a tree list | NodeOr of 'a tree * ('a tree list)
+
 type t =
   {
     kb : Graph.graph ;
@@ -6,7 +8,6 @@ type t =
     path : Graph.Facts.t list ;
   }
 
-type 'a tree = Leaf of 'a | NodeAnd of 'a tree list | NodeOr of 'a tree * ('a tree list)
 
 let dummy_tree =
   NodeOr (
@@ -39,7 +40,43 @@ let dummy_tree =
 
 (*  **************  SEARCH  ********************** *)
 
-(* let search (s : System.system) : tree = *)
+let unsome_list lst =
+  let rec aux l acc =
+    match l with
+    | [] -> acc
+    | Some s :: tl -> aux tl (s :: acc)
+    | None :: tl -> aux tl acc
+  in aux lst []
+
+
+let rec or_search kb f : Graph.Facts.t tree option =
+  (* verifier que pas deja dans le tree *)
+  match Graph.condition kb f with
+  | None -> None
+  | Some o when Graph.Ors.is_empty o -> Some (Leaf f)
+  | Some o -> begin
+      let rec aux l =
+        match l with
+        | [] -> None
+        | hd :: tl -> match and_search kb hd with
+          | None -> aux tl
+          | Some s -> Some s
+      in aux (Graph.Ors.elements o)
+    end
+and and_search kb a : Graph.Facts.t tree option =
+  let results = List.map (fun f -> or_search kb f) (Graph.Ands.elements a) in
+  let failure = List.mem None results in
+  if failure then None
+  (* else let unsomed = unsome_list results in *)
+   else Some (NodeAnd (unsome_list results))
+
+
+
+
+let search (t : t) q : Graph.Facts.t tree option =
+  or_search t.kb q
+
+
 
 
 (*  **************  SERIALIZATION  *************** *)
@@ -90,12 +127,10 @@ let string_of_tree t =
 
 let list_facts (kb : Graph.graph) : Graph.Facts.t list =
   let get_facts (conc, cond) =
-    conc :: Graph.not_of_fact conc :: (cond
-                                       |> Graph.Ors.elements
-                                       |> List.map Graph.Ands.elements
-                                       |> List.flatten
-                                       |> List.map (fun f -> [f ; Graph.not_of_fact f])
-                                       |> List.flatten)
+    conc :: (cond
+             |> Graph.Ors.elements
+             |> List.map Graph.Ands.elements
+             |> List.flatten)
   in
   let rec aux acc lst = match lst with
     | head::tail  -> aux (get_facts head @ acc) tail 
@@ -129,7 +164,15 @@ let search_one (s : t) q : t =
 
 
 let search_all (system : System.system) : unit =
+  (* print_endline (string_of_tree dummy_tree) ; *)
+  let s = init_search system in
+  let result = search s (List.hd system.queries |> Graph.Ors.choose |> Graph.Ands.choose) in
+  match result with
+  | None -> print_endline "echec"
+  | Some tree -> print_endline (string_of_tree tree)
+
+(* let search_all (system : System.system) : unit =
   print_endline (string_of_tree dummy_tree) ;
   let s = init_search system in
   let final_search = List.fold_left search_one s system.queries in
-  ()
+  () *)

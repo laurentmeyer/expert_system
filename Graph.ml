@@ -52,6 +52,11 @@ let string_of_graph (g : graph) =
 let vertices (graph : graph) : Facts.t list =
   List.map (fun (a, _) -> a) graph
 
+let condition (graph : graph) vertex : Ors.t option =
+  match List.find_opt (fun (a, _) -> a = vertex) graph with
+  | Some (_, cond) -> Some cond
+  | None -> None
+
 (* let condition (graph : graph) vertex : Ors.t option =
   match List.find_opt (fun (a, _) -> a = vertex) graph with
   | Some (_, cond) -> Some cond
