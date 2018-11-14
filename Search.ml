@@ -35,6 +35,15 @@ let unsome_list lst =
     | None :: tl -> aux tl acc
   in aux lst []
 
+let rec is_in_tree fact tree : bool = 
+  let is_in_any lst = List.map (is_in_tree fact) lst
+                      |> List.fold_left Pervasives.(||) false
+                      |> not in
+  match tree with
+  | Leaf f -> f = fact
+  | NodeAnd lst -> is_in_any lst
+  | NodeOr (_, lst) -> is_in_any lst
+
 let rec or_search kb f : Graph.Facts.t tree option =
   (* verifier que pas deja dans le tree *)
   match Graph.condition kb f with
@@ -45,15 +54,16 @@ let rec or_search kb f : Graph.Facts.t tree option =
         match l with
         | [] -> None
         | hd :: tl -> match and_search kb hd with
-          | None -> aux tl
-          | Some s -> Some (NodeOr (Leaf f, [s]))
+          | None                        -> aux tl
+          (* | Some s when is_in_tree f s  -> aux tl *)
+          | Some s                      -> Some (NodeOr (Leaf f, [s]))
       in aux (Graph.Ors.elements o)
     end
 and and_search kb a : Graph.Facts.t tree option =
   let results = List.map (fun f -> or_search kb f) (Graph.Ands.elements a) in
   let failure = List.mem None results in
   if failure then None
-   else Some (NodeAnd (unsome_list results))
+  else Some (NodeAnd (unsome_list results))
 
 let search (kb : Graph.graph) q : Graph.Facts.t tree option =
   or_search kb q

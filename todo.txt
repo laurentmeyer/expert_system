@@ -1,6 +1,7 @@
-- améliorer l'ajout d'adjecency en y enlevant les doublons, ainsi que les elements inclus dans d'autres
-- ajouter la détection d'undefined
-- quel comportement si "!A => B ; =C ; ?B" ?
-- challenger le fait qu'on ajoute les conditions aussi simplement dans les adjacences
-- detection de contradictions
-- detection de verités "induites"
+- gestion des not dans les conditions
+- detection de verités "induites" (voir si est resté ou a été supprimé)
+- enlever les iff
+- détection des cycles
+- meilleur visualisateur
+- revision exhaustive des cas d'erreur
+- avoir 110%
