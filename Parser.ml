@@ -41,15 +41,11 @@ let string_of_token t =
   | Comment -> "{ COMMENT }"
   | Command c -> "{ COMMAND: " ^ string_of_command c ^ " }"
 
-
 let rec string_of_lexed p =
   match p with
   | [] -> ""
   | token :: [] -> string_of_token token
   | token :: tail -> string_of_token token ^ "\n" ^ string_of_lexed tail
-
-
-
 
 (*  **************  LEXING  *************** *)
 
@@ -117,9 +113,6 @@ let lex_line line =
     | _ -> true in
   List.filter filter_token unfiltered_token
 
-
-
-
 (*  **************  PARSING  *************** *)
 
 let rec parse_expression tokens =
@@ -150,12 +143,12 @@ let rec parse_expression tokens =
   | Fact a :: Operand Xor :: Fact b :: Operand Xor :: tail -> parse_expression (Fact (Graph.xor_ors a b) :: Operand Xor :: tail)
   | Fact a :: Operand Xor :: tail -> Fact a :: Operand Xor :: parse_expression tail
   (* Exceptions *)
-  | _ -> raise (Parsing_exception "cas a gerer")
+  | _ -> raise (Parsing_exception "Parser: incorrect rule")
 
 let parsed_to_ors tokens = 
   match tokens with
   | Fact f :: [] -> f
-  | _ -> raise (Parsing_exception ("Non resolved expression" ^ string_of_lexed tokens))
+  | _ -> raise (Parsing_exception ("Parser: Non resolved expression" ^ string_of_lexed tokens))
 
 let split_rule tokens =
   let rec aux acc rhs =
@@ -177,14 +170,14 @@ let parse_truth tokens (system : System.system) =
   let rec aux t acc = match t with
   | [] -> acc
   | Fact f :: tail -> aux tail (acc @ [f])
-  | _ -> raise (Parsing_exception "Unrecognized token in truths") in
+  | _ -> raise (Parsing_exception "Parser: Invalid token in truths") in
   { system with truths = aux tokens system.truths }
 
 let parse_query tokens (system : System.system) =
   let rec aux t acc = match t with
   | [] -> acc
   | Fact f :: tail -> aux tail (acc @ [f])
-  | _ -> raise (Parsing_exception "Unrecognized token in queries") in
+  | _ -> raise (Parsing_exception "Parser: Invalid token in queries") in
   { system with queries = aux tokens [] }
   
 let parse_tokens (tokens : token list) system : System.system =
