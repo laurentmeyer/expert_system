@@ -132,8 +132,8 @@ let add_adjacency graph (conclusion, condition) =
     in new_adjacency :: not_satisfies  
 
 let add_rule graph (conclusion, condition) : graph =
-  if Ors.cardinal conclusion > 1 then raise (Contradiction_exception "Or in conclusion")
-  else if facts_are_positive conclusion = false then raise (Contradiction_exception "Not in conclusion")
+  if Ors.cardinal conclusion > 1 then raise (Contradiction_exception "Invalid system:Or in conclusion")
+  else if facts_are_positive conclusion = false then raise (Contradiction_exception "Invalid system: Not in conclusion")
   else adjacency_to_graph (conclusion, condition)
     |> List.fold_left add_adjacency graph
 
