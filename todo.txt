@@ -1,4 +1,3 @@
-- enlever les iff
 - meilleur visualisateur
 - revision exhaustive des cas d'erreur
 - avoir 110%
@@ -7,3 +6,4 @@
 DONE
 - gestion des not dans les conditions
 - détection des cycles
+- enlever les iff
