@@ -141,18 +141,3 @@ let add_truths g t =
   t
   |> List.map (fun x -> (x, Ors.empty))
   |> List.fold_left add_rule g
-
-let deduct_truths g =
-  let ors_had_truth ors =
-    Ors.elements ors
-    |> List.map (fun elt -> (elt, Ors.remove elt ors))
-    |> List.map (fun (a, b) -> (not_of_ors (Ors.singleton a), b))
-    |> List.exists (fun (a, b) -> Ors.subset a b)
-  in
-  g
-  |> List.map (fun (a, b) -> if ors_had_truth b then (a, Ors.empty) else (a, b))
-  |> List.fold_left add_adjacency []
-
-let expand_graph graph =
-  graph
-  |> deduct_truths (* a mettre directement dans l'ajout d'adjacency ?? *)

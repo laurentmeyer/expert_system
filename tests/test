@@ -1,5 +1,8 @@
+!A => B
+=
+?B
 
-A|C+D|P => B+G+H
-E => B
-=AB
-?D
+#A|C+D|P => B+G+H
+#!E => B
+#=
+#?B

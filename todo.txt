@@ -1,7 +1,9 @@
-- gestion des not dans les conditions
-- detection de verités "induites" (voir si est resté ou a été supprimé)
 - enlever les iff
-- détection des cycles
 - meilleur visualisateur
 - revision exhaustive des cas d'erreur
 - avoir 110%
+
+
+DONE
+- gestion des not dans les conditions
+- détection des cycles

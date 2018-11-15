@@ -35,44 +35,43 @@ let unsome_list lst =
     | None :: tl -> aux tl acc
   in aux lst []
 
-let rec is_in_tree fact tree : bool = 
-  let is_in_any lst = List.map (is_in_tree fact) lst
-                      |> List.fold_left Pervasives.(||) false
-                      |> not in
-  match tree with
-  | Leaf f -> f = fact
-  | NodeAnd lst -> is_in_any lst
-  | NodeOr (_, lst) -> is_in_any lst
-
-let rec or_search kb f : Graph.Facts.t tree option =
-  (* verifier que pas deja dans le tree *)
-  match Graph.condition kb f with
-  | None -> None
-  | Some o when Graph.Ors.is_empty o -> Some (Leaf f)
+let rec or_search kb f path : Graph.Facts.t tree option =
+  if List.mem f path then None else
+  let path = f :: path in
+  let (fact_is_positive, absolute_fact) = match f with
+  | Graph.Facts.Fact _ -> (true, f)
+  | Graph.Facts.NotFact g -> (false, Graph.Facts.Fact g) in
+  match Graph.condition kb absolute_fact with
+  | None when fact_is_positive -> None
+  | None -> Some (Leaf f)
+  | Some o when Graph.Ors.is_empty o && fact_is_positive -> Some (Leaf f)
+  | Some o when Graph.Ors.is_empty o -> None
   | Some o -> begin
       let rec aux l =
         match l with
-        | [] -> None
-        | hd :: tl -> match and_search kb hd with
-          | None                        -> aux tl
-          (* | Some s when is_in_tree f s  -> aux tl *)
-          | Some s                      -> Some (NodeOr (Leaf f, [s]))
+        | [] when fact_is_positive       -> None
+        | []                             -> Some (Leaf f)
+        | hd :: tl  -> match and_search kb hd path with
+          | None                          -> aux tl
+          | Some s when fact_is_positive  -> Some (NodeOr (Leaf f, [s]))
+          | Some s                        -> None
       in aux (Graph.Ors.elements o)
     end
-and and_search kb a : Graph.Facts.t tree option =
-  let results = List.map (fun f -> or_search kb f) (Graph.Ands.elements a) in
+and and_search kb a path : Graph.Facts.t tree option =
+  let results = List.map (fun f -> or_search kb f path) (Graph.Ands.elements a) in
   let failure = List.mem None results in
   if failure then None
   else Some (NodeAnd (unsome_list results))
 
 let search (kb : Graph.graph) q : Graph.Facts.t tree option =
-  or_search kb q
+  or_search kb q []
 
 (*  **************  INITIALIZATION  *************** *)
 
 let search_all (system : System.system) : unit =
   let kb = Graph.add_truths system.rules system.truths in 
-  let result = search kb (List.hd system.queries |> Graph.Ors.choose |> Graph.Ands.choose) in
+  let q = List.hd system.queries |> Graph.Ors.choose |> Graph.Ands.choose in
+  let result = search kb q in
   match result with
-  | None -> print_endline "echec"
-  | Some tree -> print_endline (string_of_tree tree)
+  | None -> Printf.printf "%s is false.\n" (Graph.string_of_fact q)
+  | Some tree -> Printf.printf "%s is true:\n%s\n" (Graph.string_of_fact q) (string_of_tree tree)
