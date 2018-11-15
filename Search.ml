@@ -1,4 +1,4 @@
-type 'a tree = Leaf of 'a | NodeAnd of 'a tree list | NodeOr of 'a tree * ('a tree list)
+type 'a tree = Leaf of 'a | NodeAnd of 'a tree list | NodeOr of 'a * 'a tree
 
 (*  **************  SERIALIZATION  *************** *)
 
@@ -6,24 +6,18 @@ let rec depth t =
   match t with
   | Leaf _ -> 1
   | NodeAnd lst -> List.fold_left max 0 (List.map depth lst)
-  | NodeOr (f, lst) -> 1 + List.fold_left max 0 (List.map depth lst)
-
-let make_colums d =
-  let rec aux i acc =
-    if i = 0 then acc
-    else if i mod 2 = 0 then aux (i - 1) ("And\t" ^ acc)
-    else aux (i - 1) ("Or\t" ^ acc)
-  in
-  aux d ""
+  | NodeOr (f, lst) -> 1 + depth lst
 
 let string_of_tree t =
   let rec aux depth tree =
+    let pad = String.make depth '|' in
     match tree with
-    | Leaf f        -> String.make depth '\t' ^ Graph.string_of_fact f ^ "\n"
-    | NodeAnd n     -> (List.map (aux depth) n |> List.fold_left Pervasives.(^) "") ^ "\n"
-    | NodeOr (f, o) -> aux depth f ^ (List.map (aux (depth + 1)) o |> List.fold_left Pervasives.(^) "")
+    | NodeOr (f, a) -> pad ^ Graph.string_of_fact f ^ " is true because:\n" ^ aux (depth + 1) a
+    | NodeAnd n     -> let cond_list = List.map (aux depth) n in List.fold_left (fun a b -> a ^ "\n" ^ pad ^ "and\n" ^ b) (List.hd cond_list) (List.tl cond_list)
+    | Leaf f        -> pad ^ Graph.string_of_fact f ^ " is true"
   in
-  make_colums (depth t) ^ "\n" ^ aux 0 t
+  (* make_colums (depth t) ^ "\n" ^ aux 0 t *)
+  aux 0 t
 
 (*  **************  SEARCH  ********************** *)
 
@@ -53,7 +47,7 @@ let rec or_search kb f path : Graph.Facts.t tree option =
         | []                             -> Some (Leaf f)
         | hd :: tl  -> match and_search kb hd path with
           | None                          -> aux tl
-          | Some s when fact_is_positive  -> Some (NodeOr (Leaf f, [s]))
+          | Some s when fact_is_positive  -> Some (NodeOr (f, s))
           | Some s                        -> None
       in aux (Graph.Ors.elements o)
     end
@@ -74,6 +68,7 @@ let search_all (system : System.system) : unit =
   let results = List.map (fun x -> (x, search kb x)) q in
   let print_results r = 
   match r with
-  | q, None      -> Printf.printf "%s is false.\n" (Graph.string_of_fact q)
-  | q, Some tree  -> Printf.printf "%s is true:\n%s\n" (Graph.string_of_fact q) (string_of_tree tree)
+  | q, None      -> Printf.printf "%s is false\n\n" (Graph.string_of_fact q)
+  (* | q, Some tree  -> Printf.printf "%s is true.\n" (Graph.string_of_fact q) *)
+  | q, Some tree  -> Printf.printf "%s\n\n" (string_of_tree tree)
   in List.iter print_results results

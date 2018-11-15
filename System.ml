@@ -26,7 +26,7 @@ let rec string_of_truths truths =
 
 
 let string_of_system (s : system) =
-  "\n\n\n======EXPERT SYSTEM=====\n\ngraph:\n" ^ Graph.string_of_graph s.rules
+  "======EXPERT SYSTEM=====\n\ngraph:\n" ^ Graph.string_of_graph s.rules
   ^ "\ntruths: " ^ string_of_truths s.truths
   ^ "\n\nqueries: " ^ string_of_queries s.queries
   ^ "\n\n=========================\n"
