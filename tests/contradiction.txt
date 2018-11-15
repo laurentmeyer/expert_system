@@ -1,4 +1,0 @@
-A => B + C
-D => !B
-= AD
-?C #should raise exception

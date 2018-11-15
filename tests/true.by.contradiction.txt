@@ -1,3 +1,0 @@
-!A => B
-!A => !B
-?A #should be true or contradiction
