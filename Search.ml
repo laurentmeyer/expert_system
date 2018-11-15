@@ -70,8 +70,10 @@ let search (kb : Graph.graph) q : Graph.Facts.t tree option =
 
 let search_all (system : System.system) : unit =
   let kb = Graph.add_truths system.rules system.truths in 
-  let q = List.hd system.queries |> Graph.Ors.choose |> Graph.Ands.choose in
-  let result = search kb q in
-  match result with
-  | None -> Printf.printf "%s is false.\n" (Graph.string_of_fact q)
-  | Some tree -> Printf.printf "%s is true:\n%s\n" (Graph.string_of_fact q) (string_of_tree tree)
+  let q = List.map (fun x -> x |> Graph.Ors.choose |> Graph.Ands.choose) system.queries in
+  let results = List.map (fun x -> (x, search kb x)) q in
+  let print_results r = 
+  match r with
+  | q, None      -> Printf.printf "%s is false.\n" (Graph.string_of_fact q)
+  | q, Some tree  -> Printf.printf "%s is true:\n%s\n" (Graph.string_of_fact q) (string_of_tree tree)
+  in List.iter print_results results
