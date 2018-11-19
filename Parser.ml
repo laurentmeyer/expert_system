@@ -7,7 +7,6 @@ type token =
   | Not
   | Operand of operand
   | Implication
-  | DoubleImplication
   | Fact of Graph.Ors.t
   | Command of command
   | Comment
@@ -35,21 +34,16 @@ let string_of_token t =
   | Not -> "{ NOT }"
   | Whitespace -> "{ WHITESPACE }"
   | Implication -> "{ IMPLICATION }"
-  | DoubleImplication -> "{ DOUBLE IMPLICATION }"
   | Operand o -> "{ OPERAND: " ^ string_of_operand o ^ " }"
   | Fact f -> "{ FACT: " ^ Graph.string_of_or f ^ " }"
   | Comment -> "{ COMMENT }"
   | Command c -> "{ COMMAND: " ^ string_of_command c ^ " }"
-
 
 let rec string_of_lexed p =
   match p with
   | [] -> ""
   | token :: [] -> string_of_token token
   | token :: tail -> string_of_token token ^ "\n" ^ string_of_lexed tail
-
-
-
 
 (*  **************  LEXING  *************** *)
 
@@ -60,7 +54,6 @@ let string_of_token t =
   | Not -> "!"
   | Operand _ -> "[|\\+\\^]"
   | Implication -> "=>"
-  | DoubleImplication -> "<=>"
   | Fact _ -> "[A-Z]"
   | Command _ -> "[\\?=]"
   | Comment -> "#.*"
@@ -76,7 +69,6 @@ let token_of_string str =
   else if str = "|" then Operand Or
   else if str = "^" then Operand Xor
   else if str = "=>" then Implication
-  else if str = "<=>" then DoubleImplication
   else if str = "=" then Command Truth
   else if str = "?" then Command Query
   else if Str.string_match (Str.regexp "^[ \\t]") str 0 then Whitespace
@@ -98,7 +90,7 @@ let cascade_lexing res token =
         Ok (new_str, new_token_list)
     end
 
-let all_tokens = [LeftBracket ; RightBracket; Not ; Operand And ; Operand Or ; Operand Xor ; Implication ; DoubleImplication ; Fact Graph.Ors.empty ; Comment ; Whitespace ; Command Truth ; Command Query]
+let all_tokens = [LeftBracket ; RightBracket; Not ; Operand And ; Operand Or ; Operand Xor ; Implication ; Fact Graph.Ors.empty ; Comment ; Whitespace ; Command Truth ; Command Query]
 
 let lex_line line =
   let rec aux lexing =
@@ -116,9 +108,6 @@ let lex_line line =
     | Whitespace -> false
     | _ -> true in
   List.filter filter_token unfiltered_token
-
-
-
 
 (*  **************  PARSING  *************** *)
 
@@ -150,41 +139,40 @@ let rec parse_expression tokens =
   | Fact a :: Operand Xor :: Fact b :: Operand Xor :: tail -> parse_expression (Fact (Graph.xor_ors a b) :: Operand Xor :: tail)
   | Fact a :: Operand Xor :: tail -> Fact a :: Operand Xor :: parse_expression tail
   (* Exceptions *)
-  | _ -> raise (Parsing_exception "cas a gerer")
+  | _ -> raise (Parsing_exception "Parser: incorrect rule")
 
 let parsed_to_ors tokens = 
   match tokens with
   | Fact f :: [] -> f
-  | _ -> raise (Parsing_exception ("Non resolved expression" ^ string_of_lexed tokens))
+  | _ -> raise (Parsing_exception ("Parser: Non resolved expression" ^ string_of_lexed tokens))
 
 let split_rule tokens =
   let rec aux acc rhs =
     match rhs with
     | Implication :: tail -> (acc, tail)
-    | DoubleImplication :: tail -> (acc, tail)
     | hd :: tail -> aux (acc @ [hd]) tail
-    | _ -> raise (Parsing_exception "Parser: no `=>' or `<=>' in the rule.") in
+    | _ -> raise (Parsing_exception "Parser: no `=>' in the rule.") in
   aux [] tokens
 
 let parse_rule (tokens : token list) (system : System.system) : System.system =
   let (left_side, right_side) = split_rule tokens in
   let new_left = parsed_to_ors (parse_expression left_side) in
   let new_right = parsed_to_ors (parse_expression right_side) in
-  let new_graph = Graph.add_adjacency system.rules (new_right, new_left) in
+  let new_graph = Graph.add_rule system.rules (new_right, new_left) in
   { system with rules = new_graph }
 
 let parse_truth tokens (system : System.system) =
   let rec aux t acc = match t with
   | [] -> acc
   | Fact f :: tail -> aux tail (acc @ [f])
-  | _ -> raise (Parsing_exception "Unrecognized token in truths") in
+  | _ -> raise (Parsing_exception "Parser: Invalid token in truths") in
   { system with truths = aux tokens system.truths }
 
 let parse_query tokens (system : System.system) =
   let rec aux t acc = match t with
   | [] -> acc
   | Fact f :: tail -> aux tail (acc @ [f])
-  | _ -> raise (Parsing_exception "Unrecognized token in queries") in
+  | _ -> raise (Parsing_exception "Parser: Invalid token in queries") in
   { system with queries = aux tokens [] }
   
 let parse_tokens (tokens : token list) system : System.system =
